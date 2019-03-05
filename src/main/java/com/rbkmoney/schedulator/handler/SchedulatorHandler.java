@@ -2,10 +2,15 @@ package com.rbkmoney.schedulator.handler;
 
 import com.rbkmoney.damsel.schedule.*;
 import com.rbkmoney.machinarium.client.AutomatonClient;
+import com.rbkmoney.machinarium.domain.TMachineEvent;
+import com.rbkmoney.machinarium.exception.MachineAlreadyExistsException;
+import com.rbkmoney.machinarium.exception.MachineNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.thrift.TException;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Slf4j
 @Component
@@ -16,6 +21,7 @@ public class SchedulatorHandler implements SchedulatorSrv.Iface{
 
     @Override
     public void registerJob(String scheduleId, RegisterJobRequest registerJobRequest) throws ScheduleAlreadyExists, BadContextProvided, TException {
+        log.info("Register job started: scheduleId {}, registerJobRequest {}", scheduleId, registerJobRequest);
         ScheduleJobRegistered jobRegistered = new ScheduleJobRegistered()
                 .setExecutorServicePath(registerJobRequest.getExecutorServicePath())
                 .setContext(registerJobRequest.getContext());
@@ -29,11 +35,35 @@ public class SchedulatorHandler implements SchedulatorSrv.Iface{
         }
 
         ScheduleChange scheduleChange = ScheduleChange.schedule_job_registered(jobRegistered);
-        automatonClient.start(scheduleId, scheduleChange);
+        try {
+            automatonClient.start(scheduleId, scheduleChange);
+        } catch (MachineAlreadyExistsException e) {
+            throw new ScheduleAlreadyExists();
+        }
+
+        List<TMachineEvent<ScheduleChange>> events = automatonClient.getEvents(scheduleId);
+        if (events.size() != 2 || !events.get(1).getData().isSetScheduleContextValidated()) {
+            throw new RuntimeException("Incorrect state of machine " + scheduleId);
+        }
+
+        ContextValidationResponse response = events.get(1).getData().getScheduleContextValidated().getResponse();
+        if (response.isSetErrors()) {
+            if (!response.getErrors().isEmpty()) {
+                throw new BadContextProvided(response);
+            }
+        }
+
+        log.info("Job with scheduleId {} successfully registered", scheduleId);
     }
 
     @Override
     public void deregisterJob(String scheduleId) throws ScheduleNotFound, TException {
-        automatonClient.call(scheduleId, ScheduleChange.schedule_job_deregistered(new ScheduleJobDeregistered()));
+        log.info("Deregister job started: scheduleId {}, registerJobRequest {}", scheduleId);
+        try {
+            automatonClient.call(scheduleId, ScheduleChange.schedule_job_deregistered(new ScheduleJobDeregistered()));
+        } catch (MachineNotFoundException e) {
+            throw new ScheduleNotFound();
+        }
+        log.info("Job with scheduleId {} successfully deregistered", scheduleId);
     }
 }

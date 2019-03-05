@@ -8,9 +8,14 @@ import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.field.CronFieldName;
 import com.cronutils.model.field.expression.And;
 import com.cronutils.model.field.expression.FieldExpression;
+import com.cronutils.model.time.ExecutionTime;
 import com.rbkmoney.damsel.base.*;
 import com.rbkmoney.damsel.domain.Calendar;
 import com.rbkmoney.damsel.domain.CalendarHoliday;
+import com.rbkmoney.damsel.schedule.Event;
+import com.rbkmoney.damsel.schedule.EventPayload;
+import com.rbkmoney.damsel.schedule.ScheduleChange;
+import com.rbkmoney.machinarium.domain.TSinkEvent;
 import org.quartz.impl.calendar.HolidayCalendar;
 
 import java.sql.Date;
@@ -51,7 +56,7 @@ public class SchedulerUtil {
     }
 
     public static String buildCron(Schedule schedule, WeekDay firstDayOfWeek, CronFieldName questionField) {
-        CronBuilder cronBuilder = CronBuilder.cron(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ))
+        CronBuilder cronBuilder = CronBuilder.cron(CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX))
                 .withYear(buildExpression(schedule.getYear()))
                 .withMonth(buildExpression(schedule.getMonth()))
                 .withDoM(buildExpression(schedule.getDayOfMonth()))
@@ -85,7 +90,7 @@ public class SchedulerUtil {
 
     private static FieldExpression buildDaysOfWeekOnExpression(Set<DayOfWeek> days, WeekDay firstDayOfWeek) {
         Set<Integer> dayValues = days.stream()
-                .map(dayValue -> ConstantsMapper.weekDayMapping(firstDayOfWeek, ConstantsMapper.QUARTZ_WEEK_DAY, dayValue.getValue()))
+                .map(dayValue -> ConstantsMapper.weekDayMapping(firstDayOfWeek, ConstantsMapper.JAVA8, dayValue.getValue()))
                 .collect(Collectors.toSet());
         return buildOnExpression(dayValues);
     }
@@ -174,12 +179,21 @@ public class SchedulerUtil {
         for (Map.Entry<Integer, Set<CalendarHoliday>> yearsHolidays : calendar.getHolidays().entrySet()) {
             int year = yearsHolidays.getKey();
             for (CalendarHoliday holiday : yearsHolidays.getValue()) {
-                Date excludedDate = Date.valueOf(LocalDate.of(year, holiday.getMonth().getValue(), (int) holiday.getDay()));
+                java.sql.Date excludedDate = Date.valueOf(LocalDate.of(year, holiday.getMonth().getValue(), (int) holiday.getDay()));
 
                 holidayCalendar.addExcludedDate(excludedDate);
             }
         }
         return holidayCalendar;
+    }
+
+    public static Event toEvent(TSinkEvent<ScheduleChange> changeTSinkEvent) {
+        return new Event(
+                changeTSinkEvent.getEvent().getId(),
+                changeTSinkEvent.getEvent().getCreatedAt().toString(),
+                changeTSinkEvent.getSourceId(),
+                new EventPayload(Collections.singletonList(changeTSinkEvent.getEvent().getData()))
+        );
     }
 
 }

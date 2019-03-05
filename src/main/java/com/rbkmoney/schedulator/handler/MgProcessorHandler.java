@@ -19,6 +19,8 @@ import com.rbkmoney.schedulator.service.DominantService;
 import com.rbkmoney.schedulator.trigger.FreezeTimeCronScheduleBuilder;
 import com.rbkmoney.schedulator.trigger.FreezeTimeCronTrigger;
 import com.rbkmoney.schedulator.util.SchedulerUtil;
+import com.rbkmoney.woody.api.flow.error.WUnavailableResultException;
+import com.rbkmoney.woody.api.flow.error.WUndefinedResultException;
 import com.rbkmoney.woody.thrift.impl.http.THSpawnClientBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.thrift.TException;
@@ -43,7 +45,11 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
 
     private ContextValidationResponse validateExecutionContext(String url, ByteBuffer context) throws TException {
         ScheduledJobExecutorSrv.Iface client = getRemoteClient(url);
-        return client.validateExecutionContext(context);
+        try {
+            return client.validateExecutionContext(context);
+        } catch (Exception e) {
+            throw new WUnavailableResultException(e);
+        }
     }
 
     private ScheduledJobExecutorSrv.Iface getRemoteClient(String url) {
@@ -91,7 +97,6 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
                 .orElseThrow(() -> new RuntimeException("Couldn't compute next cron time"));
 
         return new ScheduledJobContext(nextFireTime, prevFireTime, nextCronTime);
-
     }
 
     @Override
@@ -108,9 +113,12 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
             SignalResultData<ScheduleChange> resultData = new SignalResultData<>(Arrays.asList(scheduleChangeRegistered, scheduleChangeValidated), complexAction);
             log.info("Response of processSignalInit: {}", resultData);
             return resultData;
+        } catch (WUnavailableResultException e) {
+            log.warn("Couldn't call remote service. We will try again.", e);
+            throw e;
         } catch (Exception e) {
             log.warn("Couldn't processSignalInit, machineId={}, scheduleChangeRegistered={}", machineId, scheduleChangeRegistered, e);
-            return new SignalResultData<>(Collections.emptyList(), new ComplexAction());
+            throw new WUndefinedResultException(e);
         }
     }
 
@@ -149,9 +157,12 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
             SignalResultData<ScheduleChange> payoutChangeSignalResultData = new SignalResultData<>(Collections.singletonList(scheduleChange), complexAction);
             log.info("Response of processSignalTimeout: {}", payoutChangeSignalResultData);
             return payoutChangeSignalResultData;
+        } catch (WUnavailableResultException e) {
+            log.warn("Couldn't call remote service. We will try again.", e);
+            throw e;
         } catch (Exception e) {
             log.warn("Couldn't processSignalTimeout, machineId={}", machineId, e);
-            return new SignalResultData<>(Collections.emptyList(), new ComplexAction());
+            throw new WUndefinedResultException(e);
         }
     }
 

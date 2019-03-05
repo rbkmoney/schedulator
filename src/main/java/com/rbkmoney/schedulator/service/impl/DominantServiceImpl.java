@@ -5,6 +5,7 @@ import com.rbkmoney.damsel.domain_config.Reference;
 import com.rbkmoney.damsel.domain_config.*;
 import com.rbkmoney.schedulator.exception.NotFoundException;
 import com.rbkmoney.schedulator.service.DominantService;
+import com.rbkmoney.woody.api.flow.error.WUndefinedResultException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.thrift.TException;
@@ -32,7 +33,7 @@ public class DominantServiceImpl implements DominantService {
             log.info("Schedule has been found, scheduleRef='{}', revisionReference='{}', schedule='{}'", scheduleRef, revisionReference, schedule);
             return schedule;
         } catch (VersionNotFound | ObjectNotFound ex) {
-            throw new NotFoundException(String.format("Version not found, scheduleRef='%s', revisionReference='%s'", scheduleRef, revisionReference), ex);
+            throw new WUndefinedResultException(String.format("Version not found, scheduleRef='%s', revisionReference='%s'", scheduleRef, revisionReference), ex);
         } catch (TException ex) {
             throw new RuntimeException(String.format("Failed to get schedule, scheduleRef='%s', revisionReference='%s'", scheduleRef, revisionReference), ex);
         }
@@ -52,7 +53,7 @@ public class DominantServiceImpl implements DominantService {
             log.info("Calendar has been found, calendarRef='{}', revisionReference='{}', calendar='{}'", calendarRef, revisionReference, calendar);
             return calendar;
         } catch (VersionNotFound | ObjectNotFound ex) {
-            throw new NotFoundException(String.format("Version not found, calendarRef='%s', revisionReference='%s'", calendarRef, revisionReference), ex);
+            throw new WUndefinedResultException(String.format("Version not found, calendarRef='%s', revisionReference='%s'", calendarRef, revisionReference), ex);
         } catch (TException ex) {
             throw new RuntimeException(String.format("Failed to get calendar, calendarRef='%s', revisionReference='%s'", calendarRef, revisionReference), ex);
         }

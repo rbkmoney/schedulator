@@ -3,7 +3,7 @@ package com.rbkmoney.schedulator.handler;
 import com.rbkmoney.machinarium.client.EventSinkClient;
 import com.rbkmoney.machinarium.domain.TSinkEvent;
 import com.rbkmoney.damsel.schedule.*;
-import com.rbkmoney.schedulator.util.SchedulatorUtil;
+import com.rbkmoney.schedulator.util.SchedulerUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.thrift.TException;
 import org.springframework.stereotype.Component;
@@ -31,7 +31,7 @@ public class EventSinkHandler implements EventSinkSrv.Iface {
         }
 
         return events.stream()
-                .map(SchedulatorUtil::toEvent)
+                .map(SchedulerUtil::toEvent)
                 .collect(Collectors.toList());
     }
 
