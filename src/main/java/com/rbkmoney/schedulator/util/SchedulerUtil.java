@@ -44,9 +44,7 @@ public class SchedulerUtil {
             } else {
                 return List.of(buildCron(schedule, weekDay, DAY_OF_MONTH));
             }
-        }
-
-        if (schedule.getDayOfWeek().isSetEvery() && !schedule.getDayOfWeek().getEvery().isSetNth()) {
+        } else if (schedule.getDayOfWeek().isSetEvery() && !schedule.getDayOfWeek().getEvery().isSetNth()) {
             return List.of(buildCron(schedule, weekDay, DAY_OF_WEEK));
         } else {
             return List.of(
@@ -80,13 +78,11 @@ public class SchedulerUtil {
     }
 
     private static FieldExpression buildScheduleEveryExpression(ScheduleEvery scheduleEvery) {
-        FieldExpression fieldExpression;
         if (scheduleEvery.isSetNth()) {
-            fieldExpression = every(scheduleEvery.getNth());
+            return every(scheduleEvery.getNth());
         } else {
-            fieldExpression = always();
+            return always();
         }
-        return fieldExpression;
     }
 
     private static FieldExpression buildDaysOfWeekOnExpression(Set<DayOfWeek> days, WeekDay firstDayOfWeek) {
