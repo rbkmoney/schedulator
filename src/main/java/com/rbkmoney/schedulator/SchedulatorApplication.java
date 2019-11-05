@@ -9,7 +9,7 @@ import org.springframework.boot.web.servlet.ServletComponentScan;
 public class SchedulatorApplication extends SpringApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(SchedulatorApplication.class);
+        SpringApplication.run(SchedulatorApplication.class, args);
     }
 
 }

@@ -8,19 +8,18 @@ import javax.servlet.*;
 import javax.servlet.annotation.WebServlet;
 import java.io.IOException;
 
-@WebServlet("/v1/")
+@WebServlet("/v1/schedulator")
 @RequiredArgsConstructor
 public class SchedulatorServlet extends GenericServlet {
 
+    private final SchedulatorSrv.Iface schedulatorHandler;
     private Servlet thriftServlet;
-
-    private final SchedulatorSrv.Iface requestHandler;
 
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
         thriftServlet = new THServiceBuilder()
-                .build(SchedulatorSrv.Iface.class, requestHandler);
+                .build(SchedulatorSrv.Iface.class, schedulatorHandler);
     }
 
     @Override

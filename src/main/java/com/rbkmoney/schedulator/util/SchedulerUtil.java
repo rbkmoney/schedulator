@@ -3,24 +3,22 @@ package com.rbkmoney.schedulator.util;
 import com.cronutils.builder.CronBuilder;
 import com.cronutils.mapper.ConstantsMapper;
 import com.cronutils.mapper.WeekDay;
+import com.cronutils.model.Cron;
 import com.cronutils.model.CronType;
 import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.field.CronFieldName;
 import com.cronutils.model.field.expression.And;
 import com.cronutils.model.field.expression.FieldExpression;
 import com.cronutils.model.time.ExecutionTime;
+import com.cronutils.parser.CronParser;
 import com.rbkmoney.damsel.base.*;
-import com.rbkmoney.damsel.domain.Calendar;
-import com.rbkmoney.damsel.domain.CalendarHoliday;
-import com.rbkmoney.damsel.schedule.Event;
-import com.rbkmoney.damsel.schedule.EventPayload;
-import com.rbkmoney.damsel.schedule.ScheduleChange;
-import com.rbkmoney.machinarium.domain.TSinkEvent;
-import org.quartz.impl.calendar.HolidayCalendar;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
-import java.sql.Date;
-import java.time.LocalDate;
-import java.util.*;
+import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.cronutils.model.field.CronFieldName.DAY_OF_MONTH;
@@ -30,7 +28,10 @@ import static com.cronutils.model.field.expression.FieldExpression.questionMark;
 import static com.cronutils.model.field.expression.FieldExpressionFactory.every;
 import static com.cronutils.model.field.expression.FieldExpressionFactory.on;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SchedulerUtil {
+
+    public static final CronParser QUARTZ_CRON_PARSER = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ));
 
     public static List<String> buildCron(Schedule schedule, Optional<DayOfWeek> firstDayOfWeek) {
         WeekDay weekDay = firstDayOfWeek
@@ -39,16 +40,16 @@ public class SchedulerUtil {
 
         if (schedule.getDayOfMonth().isSetEvery() && !schedule.getDayOfMonth().getEvery().isSetNth()) {
             if (schedule.getDayOfWeek().isSetEvery() && !schedule.getDayOfWeek().getEvery().isSetNth()) {
-                return Arrays.asList(buildCron(schedule, weekDay, DAY_OF_WEEK));
+                return List.of(buildCron(schedule, weekDay, DAY_OF_WEEK));
             } else {
-                return Arrays.asList(buildCron(schedule, weekDay, DAY_OF_MONTH));
+                return List.of(buildCron(schedule, weekDay, DAY_OF_MONTH));
             }
         }
 
         if (schedule.getDayOfWeek().isSetEvery() && !schedule.getDayOfWeek().getEvery().isSetNth()) {
-            return Arrays.asList(buildCron(schedule, weekDay, DAY_OF_WEEK));
+            return List.of(buildCron(schedule, weekDay, DAY_OF_WEEK));
         } else {
-            return Arrays.asList(
+            return List.of(
                     buildCron(schedule, weekDay, DAY_OF_WEEK),
                     buildCron(schedule, weekDay, DAY_OF_MONTH));
         }
@@ -56,7 +57,7 @@ public class SchedulerUtil {
     }
 
     public static String buildCron(Schedule schedule, WeekDay firstDayOfWeek, CronFieldName questionField) {
-        CronBuilder cronBuilder = CronBuilder.cron(CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX))
+        CronBuilder cronBuilder = CronBuilder.cron(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ))
                 .withYear(buildExpression(schedule.getYear()))
                 .withMonth(buildExpression(schedule.getMonth()))
                 .withDoM(buildExpression(schedule.getDayOfMonth()))
@@ -78,7 +79,7 @@ public class SchedulerUtil {
         return cronBuilder.instance().asString();
     }
 
-    public static FieldExpression buildScheduleEveryExpression(ScheduleEvery scheduleEvery) {
+    private static FieldExpression buildScheduleEveryExpression(ScheduleEvery scheduleEvery) {
         FieldExpression fieldExpression;
         if (scheduleEvery.isSetNth()) {
             fieldExpression = every(scheduleEvery.getNth());
@@ -90,19 +91,19 @@ public class SchedulerUtil {
 
     private static FieldExpression buildDaysOfWeekOnExpression(Set<DayOfWeek> days, WeekDay firstDayOfWeek) {
         Set<Integer> dayValues = days.stream()
-                .map(dayValue -> ConstantsMapper.weekDayMapping(firstDayOfWeek, ConstantsMapper.JAVA8, dayValue.getValue()))
+                .map(dayValue -> ConstantsMapper.weekDayMapping(firstDayOfWeek, ConstantsMapper.QUARTZ_WEEK_DAY, dayValue.getValue()))
                 .collect(Collectors.toSet());
         return buildOnExpression(dayValues);
     }
 
     private static FieldExpression buildMonthOnExpression(Set<Month> months) {
         Set<Integer> monthValues = months.stream()
-                .map(monthValue -> monthValue.getValue())
+                .map(Month::getValue)
                 .collect(Collectors.toSet());
         return buildOnExpression(monthValues);
     }
 
-    public static FieldExpression buildOnExpression(Set<Integer> times) {
+    private static FieldExpression buildOnExpression(Set<Integer> times) {
         if (times.isEmpty()) {
             throw new IllegalArgumentException("Expression 'On' must not be empty");
         }
@@ -125,7 +126,7 @@ public class SchedulerUtil {
         }
     }
 
-    public static FieldExpression buildExpression(ScheduleMonth scheduleMonth) {
+    private static FieldExpression buildExpression(ScheduleMonth scheduleMonth) {
         ScheduleMonth._Fields field = scheduleMonth.getSetField();
         switch (field) {
             case EVERY:
@@ -137,7 +138,7 @@ public class SchedulerUtil {
         }
     }
 
-    public static FieldExpression buildExpression(ScheduleDayOfWeek scheduleDayOfWeek, WeekDay firstDayOfWeek) {
+    private static FieldExpression buildExpression(ScheduleDayOfWeek scheduleDayOfWeek, WeekDay firstDayOfWeek) {
         ScheduleDayOfWeek._Fields field = scheduleDayOfWeek.getSetField();
         switch (field) {
             case EVERY:
@@ -149,7 +150,7 @@ public class SchedulerUtil {
         }
     }
 
-    public static FieldExpression buildExpression(ScheduleFragment scheduleFragment) {
+    private static FieldExpression buildExpression(ScheduleFragment scheduleFragment) {
         ScheduleFragment._Fields field = scheduleFragment.getSetField();
         switch (field) {
             case EVERY:
@@ -157,7 +158,7 @@ public class SchedulerUtil {
             case ON:
                 return buildOnExpression(
                         scheduleFragment.getOn().stream()
-                                .map(byteValue -> byteValue.intValue())
+                                .map(Byte::intValue)
                                 .collect(Collectors.toSet())
                 );
             default:
@@ -165,35 +166,28 @@ public class SchedulerUtil {
         }
     }
 
-    public static HolidayCalendar buildCalendar(Calendar calendar) {
-        HolidayCalendar holidayCalendar = new HolidayCalendar();
+    public static String getNearestCron(List<String> cronExpressionList, ZonedDateTime dateTime) {
+        String nearestCronExpression = null;
+        for (String cronExpression : cronExpressionList) {
+            if (nearestCronExpression == null) {
+                nearestCronExpression = cronExpression;
+                continue;
+            }
 
-        String description = calendar.getName();
-        if (calendar.isSetDescription()) {
-            description += ": " + calendar.getDescription();
-        }
-        holidayCalendar.setDescription(description);
+            Cron nearestCron = QUARTZ_CRON_PARSER.parse(nearestCronExpression).validate();
+            Cron cron = QUARTZ_CRON_PARSER.parse(cronExpression).validate();
+            Optional<ZonedDateTime> nearestCronNextExec = ExecutionTime.forCron(nearestCron).nextExecution(dateTime);
+            Optional<ZonedDateTime> cronNextExec = ExecutionTime.forCron(cron).nextExecution(dateTime);
 
-        holidayCalendar.setTimeZone(TimeZone.getTimeZone(calendar.getTimezone()));
-
-        for (Map.Entry<Integer, Set<CalendarHoliday>> yearsHolidays : calendar.getHolidays().entrySet()) {
-            int year = yearsHolidays.getKey();
-            for (CalendarHoliday holiday : yearsHolidays.getValue()) {
-                java.sql.Date excludedDate = Date.valueOf(LocalDate.of(year, holiday.getMonth().getValue(), (int) holiday.getDay()));
-
-                holidayCalendar.addExcludedDate(excludedDate);
+            if (nearestCronNextExec.isPresent() && cronNextExec.isPresent()) {
+                int res = nearestCronNextExec.get().compareTo(cronNextExec.get());
+                if (res > 0) {
+                    nearestCronExpression = cronExpression;
+                }
             }
         }
-        return holidayCalendar;
-    }
 
-    public static Event toEvent(TSinkEvent<ScheduleChange> changeTSinkEvent) {
-        return new Event(
-                changeTSinkEvent.getEvent().getId(),
-                changeTSinkEvent.getEvent().getCreatedAt().toString(),
-                changeTSinkEvent.getSourceId(),
-                new EventPayload(Collections.singletonList(changeTSinkEvent.getEvent().getData()))
-        );
+        return nearestCronExpression;
     }
 
 }

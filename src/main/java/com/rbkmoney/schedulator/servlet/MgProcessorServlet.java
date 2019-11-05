@@ -12,9 +12,8 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class MgProcessorServlet extends GenericServlet {
 
-    private Servlet thriftServlet;
-
     private final ProcessorSrv.Iface mgProcessorHandler;
+    private Servlet thriftServlet;
 
     @Override
     public void init(ServletConfig config) throws ServletException {

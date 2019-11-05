@@ -1,7 +1,9 @@
 package com.rbkmoney.schedulator.service.impl;
 
-import com.rbkmoney.damsel.domain.*;
-import com.rbkmoney.damsel.domain_config.Reference;
+import com.rbkmoney.damsel.domain.BusinessSchedule;
+import com.rbkmoney.damsel.domain.BusinessScheduleRef;
+import com.rbkmoney.damsel.domain.Calendar;
+import com.rbkmoney.damsel.domain.CalendarRef;
 import com.rbkmoney.damsel.domain_config.*;
 import com.rbkmoney.schedulator.exception.NotFoundException;
 import com.rbkmoney.schedulator.service.DominantService;
@@ -9,7 +11,6 @@ import com.rbkmoney.woody.api.flow.error.WUndefinedResultException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.thrift.TException;
-
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 
@@ -38,8 +39,6 @@ public class DominantServiceImpl implements DominantService {
             throw new RuntimeException(String.format("Failed to get schedule, scheduleRef='%s', revisionReference='%s'", scheduleRef, revisionReference), ex);
         }
     }
-
-
 
     @Override
     public Calendar getCalendar(CalendarRef calendarRef, long domainRevision) throws NotFoundException {

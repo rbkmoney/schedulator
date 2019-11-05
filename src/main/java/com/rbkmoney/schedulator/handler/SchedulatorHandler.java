@@ -15,7 +15,7 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class SchedulatorHandler implements SchedulatorSrv.Iface{
+public class SchedulatorHandler implements SchedulatorSrv.Iface {
 
     private final AutomatonClient<ScheduleChange, ScheduleChange> automatonClient;
 
@@ -23,6 +23,7 @@ public class SchedulatorHandler implements SchedulatorSrv.Iface{
     public void registerJob(String scheduleId, RegisterJobRequest registerJobRequest) throws ScheduleAlreadyExists, BadContextProvided, TException {
         log.info("Register job started: scheduleId {}, registerJobRequest {}", scheduleId, registerJobRequest);
         ScheduleJobRegistered jobRegistered = new ScheduleJobRegistered()
+                .setScheduleId(scheduleId)
                 .setExecutorServicePath(registerJobRequest.getExecutorServicePath())
                 .setContext(registerJobRequest.getContext());
 
@@ -32,6 +33,8 @@ public class SchedulatorHandler implements SchedulatorSrv.Iface{
                     .setBusinessScheduleRef(dominantSchedule.getBusinessScheduleRef())
                     .setCalendarRef(dominantSchedule.getCalendarRef())
                     .setRevision(dominantSchedule.getRevision())));
+        } else {
+            throw new IllegalStateException("Need to specify dominant schedule");
         }
 
         ScheduleChange scheduleChange = ScheduleChange.schedule_job_registered(jobRegistered);
@@ -42,8 +45,8 @@ public class SchedulatorHandler implements SchedulatorSrv.Iface{
         }
 
         List<TMachineEvent<ScheduleChange>> events = automatonClient.getEvents(scheduleId);
-        if (events.size() != 2 || !events.get(1).getData().isSetScheduleContextValidated()) {
-            throw new RuntimeException("Incorrect state of machine " + scheduleId);
+        if (isScheduleContextValidated(events)) {
+            throw new IllegalStateException("Incorrect state of machine " + scheduleId);
         }
 
         ContextValidationResponse response = events.get(1).getData().getScheduleContextValidated().getResponse();
@@ -58,12 +61,16 @@ public class SchedulatorHandler implements SchedulatorSrv.Iface{
 
     @Override
     public void deregisterJob(String scheduleId) throws ScheduleNotFound, TException {
-        log.info("Deregister job started: scheduleId {}, registerJobRequest {}", scheduleId);
+        log.info("Deregister job started: scheduleId {}", scheduleId);
         try {
             automatonClient.call(scheduleId, ScheduleChange.schedule_job_deregistered(new ScheduleJobDeregistered()));
         } catch (MachineNotFoundException e) {
             throw new ScheduleNotFound();
         }
         log.info("Job with scheduleId {} successfully deregistered", scheduleId);
+    }
+
+    private boolean isScheduleContextValidated(List<TMachineEvent<ScheduleChange>> events) {
+        return events.size() == 2 || events.get(1).getData().isSetScheduleContextValidated();
     }
 }

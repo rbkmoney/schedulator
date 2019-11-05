@@ -1,7 +1,6 @@
 package com.rbkmoney.schedulator.handler;
 
-import com.rbkmoney.damsel.base.TimeSpan;
-import com.rbkmoney.damsel.domain.*;
+import com.rbkmoney.damsel.domain.BusinessSchedule;
 import com.rbkmoney.damsel.domain.Calendar;
 import com.rbkmoney.damsel.schedule.*;
 import com.rbkmoney.geck.common.util.TypeUtil;
@@ -10,27 +9,27 @@ import com.rbkmoney.machinarium.domain.SignalResultData;
 import com.rbkmoney.machinarium.domain.TMachineEvent;
 import com.rbkmoney.machinarium.handler.AbstractProcessorHandler;
 import com.rbkmoney.machinegun.base.Timer;
-import com.rbkmoney.machinegun.stateproc.ComplexAction;
-import com.rbkmoney.machinegun.stateproc.SetTimerAction;
-import com.rbkmoney.machinegun.stateproc.TimerAction;
-import com.rbkmoney.machinegun.stateproc.UnsetTimerAction;
+import com.rbkmoney.machinegun.msgpack.Nil;
+import com.rbkmoney.machinegun.msgpack.Value;
+import com.rbkmoney.machinegun.stateproc.*;
+import com.rbkmoney.schedulator.cron.SchedulerCalculator;
+import com.rbkmoney.schedulator.cron.SchedulerCalculatorConfig;
+import com.rbkmoney.schedulator.cron.SchedulerComputeResult;
 import com.rbkmoney.schedulator.exception.NotFoundException;
 import com.rbkmoney.schedulator.service.DominantService;
-import com.rbkmoney.schedulator.trigger.FreezeTimeCronScheduleBuilder;
-import com.rbkmoney.schedulator.trigger.FreezeTimeCronTrigger;
 import com.rbkmoney.schedulator.util.SchedulerUtil;
 import com.rbkmoney.woody.api.flow.error.WUnavailableResultException;
 import com.rbkmoney.woody.api.flow.error.WUndefinedResultException;
-import com.rbkmoney.woody.thrift.impl.http.THSpawnClientBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.thrift.TException;
-import org.quartz.TriggerBuilder;
 import org.springframework.stereotype.Component;
 
-import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.time.ZonedDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -38,69 +37,19 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
 
     private final DominantService dominantService;
 
-    public MgProcessorHandler(DominantService dominantService) {
+    private final RemoteClientManager remoteClientManager;
+
+    public MgProcessorHandler(DominantService dominantService, RemoteClientManager remoteClientManager) {
         super(ScheduleChange.class, ScheduleChange.class);
         this.dominantService = dominantService;
-    }
-
-    private ContextValidationResponse validateExecutionContext(String url, ByteBuffer context) throws TException {
-        ScheduledJobExecutorSrv.Iface client = getRemoteClient(url);
-        try {
-            return client.validateExecutionContext(context);
-        } catch (Exception e) {
-            throw new WUnavailableResultException(e);
-        }
-    }
-
-    private ScheduledJobExecutorSrv.Iface getRemoteClient(String url) {
-        return new THSpawnClientBuilder()
-                    .withAddress(URI.create(url))
-                    .build(ScheduledJobExecutorSrv.Iface.class);
-    }
-
-    private ScheduledJobContext getScheduledJobContext(Calendar calendar, BusinessSchedule schedule) {
-        List<String> cronList = SchedulerUtil.buildCron(schedule.getSchedule(), Optional.ofNullable(calendar.getFirstDayOfWeek()));
-        List<FreezeTimeCronTrigger> freezeTimeCronTriggers = cronList.stream().map(cron -> {
-            FreezeTimeCronScheduleBuilder freezeTimeCronScheduleBuilder = FreezeTimeCronScheduleBuilder.cronSchedule(cron)
-                    .inTimeZone(TimeZone.getTimeZone(calendar.getTimezone()));
-            if (schedule.isSetDelay() || schedule.isSetPolicy()) {
-                TimeSpan timeSpan = Optional.ofNullable(schedule.getPolicy())
-                        .map(PayoutCompilationPolicy::getAssetsFreezeFor)
-                        .orElse(schedule.getDelay());
-                freezeTimeCronScheduleBuilder.withYears(timeSpan.getYears())
-                        .withMonths(timeSpan.getMonths())
-                        .withDays(timeSpan.getDays())
-                        .withHours(timeSpan.getHours())
-                        .withMinutes(timeSpan.getMinutes())
-                        .withSeconds(timeSpan.getSeconds());
-            }
-            return TriggerBuilder.newTrigger().withSchedule(freezeTimeCronScheduleBuilder).build();
-        }).collect(Collectors.toList());
-
-        String nextFireTime = freezeTimeCronTriggers.stream()
-                .map(t -> t.getNextFireTime().toInstant())
-                .min(Comparator.naturalOrder())
-                .map(TypeUtil::temporalToString)
-                .orElseThrow(() -> new RuntimeException("Couldn't compute next fire time"));
-
-        String prevFireTime = freezeTimeCronTriggers.stream()
-                .map(t -> t.getPreviousFireTime().toInstant())
-                .min(Comparator.naturalOrder())
-                .map(TypeUtil::temporalToString)
-                .orElseThrow(() -> new RuntimeException("Couldn't compute prev fire time"));
-
-
-        String nextCronTime = freezeTimeCronTriggers.stream()
-                .map(t -> t.getNextCronTime().toInstant())
-                .min(Comparator.naturalOrder())
-                .map(TypeUtil::temporalToString)
-                .orElseThrow(() -> new RuntimeException("Couldn't compute next cron time"));
-
-        return new ScheduledJobContext(nextFireTime, prevFireTime, nextCronTime);
+        this.remoteClientManager = remoteClientManager;
     }
 
     @Override
-    protected SignalResultData<ScheduleChange> processSignalInit(String namespace, String machineId, ScheduleChange scheduleChangeRegistered) {
+    protected SignalResultData<ScheduleChange> processSignalInit(String namespace,
+                                                                 String machineId,
+                                                                 Content machineState,
+                                                                 ScheduleChange scheduleChangeRegistered) {
         log.info("Request processSignalInit() machineId: {} scheduleChangeRegistered: {}", machineId, scheduleChangeRegistered);
         ScheduleJobRegistered scheduleJobRegistered = scheduleChangeRegistered.getScheduleJobRegistered();
         try {
@@ -110,9 +59,13 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
             ScheduleChange scheduleChangeValidated = ScheduleChange.schedule_context_validated(scheduleContextValidated);
             ScheduledJobContext scheduledJobContext = getScheduledJobContext(scheduleJobRegistered);
             ComplexAction complexAction = buildComplexAction(scheduledJobContext.getNextFireTime());
-            SignalResultData<ScheduleChange> resultData = new SignalResultData<>(Arrays.asList(scheduleChangeRegistered, scheduleChangeValidated), complexAction);
-            log.info("Response of processSignalInit: {}", resultData);
-            return resultData;
+            SignalResultData<ScheduleChange> signalResultData = new SignalResultData<>(
+                    Value.nl(new Nil()),
+                    Arrays.asList(scheduleChangeRegistered, scheduleChangeValidated),
+                    complexAction);
+            log.info("Response of processSignalInit: {}", signalResultData);
+
+            return signalResultData;
         } catch (WUnavailableResultException e) {
             log.warn("Couldn't call remote service. We will try again.", e);
             throw e;
@@ -120,6 +73,100 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
             log.warn("Couldn't processSignalInit, machineId={}, scheduleChangeRegistered={}", machineId, scheduleChangeRegistered, e);
             throw new WUndefinedResultException(e);
         }
+    }
+
+    @Override
+    protected SignalResultData<ScheduleChange> processSignalTimeout(String namespace,
+                                                                    String machineId,
+                                                                    Content machineState,
+                                                                    List<TMachineEvent<ScheduleChange>> list) {
+        log.info("Request processSignalTimeout() machineId: {} list: {}", machineId, list);
+        try {
+            ScheduleJobRegistered scheduleJobRegistered = list.stream()
+                    .filter(e -> e.getData().isSetScheduleJobRegistered())
+                    .findFirst()
+                    .orElseThrow(() -> new NotFoundException("Couldn't found ScheduleJobRegistered for machineId = " + machineId))
+                    .getData().getScheduleJobRegistered();
+            String url = scheduleJobRegistered.getExecutorServicePath();
+
+            ExecuteJobRequest executeJobRequest = new ExecuteJobRequest();
+            ScheduledJobContext scheduledJobContext = getScheduledJobContext(scheduleJobRegistered);
+            executeJobRequest.setScheduledJobContext(scheduledJobContext);
+            executeJobRequest.setServiceExecutionContext(scheduleJobRegistered.getContext());
+
+            // Execute remote client
+            ScheduledJobExecutorSrv.Iface remoteClient = remoteClientManager.getRemoteClient(url);
+            ByteBuffer genericServiceExecutionContext = remoteClient.executeJob(executeJobRequest);
+
+            ScheduleChange scheduleChange = ScheduleChange.schedule_job_executed(new ScheduleJobExecuted(executeJobRequest, genericServiceExecutionContext));
+            ComplexAction complexAction = buildComplexAction(scheduledJobContext.getNextFireTime());
+
+            SignalResultData<ScheduleChange> signalResultData = new SignalResultData<>(
+                    Value.nl(new Nil()),
+                    Collections.singletonList(scheduleChange),
+                    complexAction);
+            log.info("Response of processSignalTimeout: {}", signalResultData);
+
+            return signalResultData;
+        } catch (WUnavailableResultException e) {
+            log.warn("Couldn't call remote service. We will try again.", e);
+            throw e;
+        } catch (Exception e) {
+            log.warn("Couldn't processSignalTimeout, machineId={}", machineId, e);
+            throw new WUndefinedResultException(e);
+        }
+    }
+
+    @Override
+    protected CallResultData<ScheduleChange> processCall(String namespace,
+                                                         String machineId,
+                                                         ScheduleChange scheduleChange,
+                                                         List<TMachineEvent<ScheduleChange>> machineEvents) {
+        log.info("Request processCall() machineId: {} scheduleChange: {} machineEvents: {}", machineId, scheduleChange, machineEvents);
+        ComplexAction complexAction = new ComplexAction();
+        TimerAction timer = new TimerAction();
+        timer.setUnsetTimer(new UnsetTimerAction());
+        complexAction.setTimer(timer);
+        CallResultData<ScheduleChange> callResultData = new CallResultData<>(
+                Value.nl(new Nil()),
+                scheduleChange,
+                Collections.singletonList(scheduleChange),
+                complexAction);
+        log.info("Response of processCall: {}", callResultData);
+        return callResultData;
+    }
+
+    private ContextValidationResponse validateExecutionContext(String url, ByteBuffer context) throws TException {
+        ScheduledJobExecutorSrv.Iface client = remoteClientManager.getRemoteClient(url);
+        try {
+            return client.validateExecutionContext(context);
+        } catch (Exception e) {
+            throw new WUnavailableResultException(e);
+        }
+    }
+
+    private SchedulerCalculator buildSchedulerCalculator(Calendar calendar, BusinessSchedule schedule) {
+        List<String> cronList = SchedulerUtil.buildCron(schedule.getSchedule(), Optional.ofNullable(calendar.getFirstDayOfWeek()));
+        ZonedDateTime currentDateTime = ZonedDateTime.now();
+        String cron = SchedulerUtil.getNearestCron(cronList, currentDateTime);
+        SchedulerCalculator schedulerCalculator = null;
+        if (schedule.isSetDelay()) {
+            SchedulerCalculatorConfig calculatorConfig = SchedulerCalculatorConfig.builder()
+                    .startTime(currentDateTime.toLocalDateTime())
+                    .months(schedule.getDelay().getDays())
+                    .days(schedule.getDelay().getDays())
+                    .hours(schedule.getDelay().getHours())
+                    .minutes(schedule.getDelay().getMinutes())
+                    .seconds(schedule.getDelay().getSeconds())
+                    .build();
+            schedulerCalculator = new SchedulerCalculator(cron, calendar, calculatorConfig);
+        } else {
+            SchedulerCalculatorConfig calculatorConfig = SchedulerCalculatorConfig.builder()
+                    .startTime(currentDateTime.toLocalDateTime())
+                    .build();
+            schedulerCalculator = new SchedulerCalculator(cron, calendar, calculatorConfig);
+        }
+        return schedulerCalculator;
     }
 
     private ComplexAction buildComplexAction(String deadline) {
@@ -139,43 +186,15 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
         return getScheduledJobContext(calendar, businessSchedule);
     }
 
-    @Override
-    protected SignalResultData<ScheduleChange> processSignalTimeout(String namespace, String machineId, List<TMachineEvent<ScheduleChange>> list) {
-        log.info("Request processSignalTimeout() machineId: {} list: {}", machineId, list);
-        try {
-            ScheduleJobRegistered scheduleJobRegistered = list.stream().filter(e -> e.getData().isSetScheduleJobRegistered()).findFirst()
-                    .orElseThrow(() -> new NotFoundException("Couldn't found ScheduleJobRegistered for machineId = " + machineId)).getData().getScheduleJobRegistered();
-            String url = scheduleJobRegistered.getExecutorServicePath();
-            ScheduledJobExecutorSrv.Iface remoteClient = getRemoteClient(url);
-            ExecuteJobRequest executeJobRequest = new ExecuteJobRequest();
-            ScheduledJobContext scheduledJobContext = getScheduledJobContext(scheduleJobRegistered);
-            executeJobRequest.setScheduledJobContext(scheduledJobContext);
-            executeJobRequest.setServiceExecutionContext(scheduleJobRegistered.getContext());
-            ByteBuffer genericServiceExecutionContext = remoteClient.executeJob(executeJobRequest);
-            ScheduleChange scheduleChange = ScheduleChange.schedule_job_executed(new ScheduleJobExecuted(executeJobRequest, genericServiceExecutionContext));
-            ComplexAction complexAction = buildComplexAction(scheduledJobContext.getNextFireTime());
-            SignalResultData<ScheduleChange> payoutChangeSignalResultData = new SignalResultData<>(Collections.singletonList(scheduleChange), complexAction);
-            log.info("Response of processSignalTimeout: {}", payoutChangeSignalResultData);
-            return payoutChangeSignalResultData;
-        } catch (WUnavailableResultException e) {
-            log.warn("Couldn't call remote service. We will try again.", e);
-            throw e;
-        } catch (Exception e) {
-            log.warn("Couldn't processSignalTimeout, machineId={}", machineId, e);
-            throw new WUndefinedResultException(e);
-        }
-    }
+    private ScheduledJobContext getScheduledJobContext(Calendar calendar, BusinessSchedule schedule) {
+        SchedulerCalculator schedulerCalculator = buildSchedulerCalculator(calendar, schedule);
+        SchedulerComputeResult calcResult = schedulerCalculator.computeFireTime();
 
-    @Override
-    protected CallResultData<ScheduleChange> processCall(String namespace, String machineId, ScheduleChange scheduleChange, List<TMachineEvent<ScheduleChange>> machineEvents) {
-        log.info("Request processCall() machineId: {} scheduleChange: {} machineEvents: {}", machineId, scheduleChange, machineEvents);
-        ComplexAction complexAction = new ComplexAction();
-        TimerAction timer = new TimerAction();
-        timer.setUnsetTimer(new UnsetTimerAction());
-        complexAction.setTimer(timer);
-        CallResultData<ScheduleChange> callResultData = new CallResultData<>(scheduleChange, Collections.singletonList(scheduleChange), complexAction);
-        log.info("Response of processCall: {}", callResultData);
-        return callResultData;
+        String prevFireTime = TypeUtil.temporalToString(calcResult.getPrevFireTime());
+        String nextFireTime = TypeUtil.temporalToString(calcResult.getNextFireTime());
+        String cronFireTime = TypeUtil.temporalToString(calcResult.getNextCronFireTime());
+
+        return new ScheduledJobContext(nextFireTime, prevFireTime, cronFireTime);
     }
 
 }

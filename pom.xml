@@ -24,6 +24,10 @@
         <exposed.ports>${server.port}</exposed.ports>
         <dockerfile.base.service.tag>0d28a0d8a1074fbe7b1555ef195cbccf7f4f8806</dockerfile.base.service.tag>
         <shared.resources.version>0.3.3</shared.resources.version>
+        <woody-thrift.version>1.1.15</woody-thrift.version>
+        <schedulator-proto.version>1.14-eecbfda</schedulator-proto.version>
+        <machinarium.version>0.2.8</machinarium.version>
+        <cronutils.version>9.0.1</cronutils.version>
     </properties>
 
     <dependencies>
@@ -36,7 +40,7 @@
         <dependency>
             <groupId>com.rbkmoney.woody</groupId>
             <artifactId>woody-thrift</artifactId>
-            <version>1.1.15</version>
+            <version>${woody-thrift.version}</version>
         </dependency>
         <dependency>
             <groupId>com.rbkmoney</groupId>
@@ -46,12 +50,12 @@
         <dependency>
             <groupId>com.rbkmoney</groupId>
             <artifactId>schedulator-proto</artifactId>
-            <version>1.10-63fec62</version>
+            <version>${schedulator-proto.version}</version>
         </dependency>
         <dependency>
             <groupId>com.rbkmoney</groupId>
             <artifactId>machinarium</artifactId>
-            <version>0.2.5</version>
+            <version>${machinarium.version}</version>
         </dependency>
         <!--spring-->
         <dependency>
@@ -76,32 +80,32 @@
             <groupId>org.springframework.retry</groupId>
             <artifactId>spring-retry</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-quartz</artifactId>
-        </dependency>
 
         <!--third party-->
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
-            <version>4.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.4</version>
         </dependency>
         <dependency>
             <groupId>com.cronutils</groupId>
             <artifactId>cron-utils</artifactId>
-            <version>8.0.0</version>
+            <version>${cronutils.version}</version>
         </dependency>
 
         <!--test-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>4.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
