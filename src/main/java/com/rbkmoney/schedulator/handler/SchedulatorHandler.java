@@ -34,7 +34,7 @@ public class SchedulatorHandler implements SchedulatorSrv.Iface {
                     .setCalendarRef(dominantSchedule.getCalendarRef())
                     .setRevision(dominantSchedule.getRevision())));
         } else {
-            throw new IllegalStateException("Need to specify dominant schedule");
+            throw new BadContextProvided();
         }
 
         ScheduleChange scheduleChange = ScheduleChange.schedule_job_registered(jobRegistered);

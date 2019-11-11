@@ -103,10 +103,10 @@ public class SchedulerCalculator {
         result = result.minusYears(calculatorConfig.getYears());
         result = result.minusMonths(calculatorConfig.getMonths());
         result = result.with(dateAdjuster.adjust(
-                calculatorConfig.getDays() * -1,
-                calculatorConfig.getHours() * -1,
-                calculatorConfig.getMinutes() * -1,
-                calculatorConfig.getSeconds() * -1)
+                -calculatorConfig.getDays(),
+                -calculatorConfig.getHours(),
+                -calculatorConfig.getMinutes(),
+                -calculatorConfig.getSeconds())
         );
 
         return result;

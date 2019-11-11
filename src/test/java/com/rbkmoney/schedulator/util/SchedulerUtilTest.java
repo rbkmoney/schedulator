@@ -7,7 +7,6 @@ import com.cronutils.model.time.ExecutionTime;
 import com.cronutils.parser.CronParser;
 import com.opencsv.CSVReader;
 import com.rbkmoney.damsel.base.*;
-import com.rbkmoney.damsel.base.Month;
 import com.rbkmoney.damsel.domain.Calendar;
 import com.rbkmoney.damsel.domain.CalendarHoliday;
 import com.rbkmoney.schedulator.cron.DateAdjuster;
@@ -21,17 +20,12 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.time.*;
-import java.time.DayOfWeek;
-import java.time.temporal.TemporalAdjuster;
-import java.time.temporal.TemporalAdjusters;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 
 import static com.rbkmoney.damsel.base.DayOfWeek.*;
 import static com.rbkmoney.damsel.base.Month.*;
-import static com.rbkmoney.damsel.base.Month.Nov;
-import static java.time.DayOfWeek.SATURDAY;
-import static java.time.DayOfWeek.SUNDAY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -50,10 +44,10 @@ public class SchedulerUtilTest {
 
     @Test
     public void findNearestCronTest() {
-        List<String> cronExpressionList = List.of("0 0 12 ? * SUN *", "0 0 12 ? * WED *", "0 0 12 ? * FRI *");
-        ZonedDateTime dateTime = ZonedDateTime.of(2019, 10, 14, 12, 0, 0, 0, ZoneId.of(calendar.getTimezone()));
+        List<String> cronExpressionList = List.of("0 0 12 ? * TUE *", "0 0 12 ? * MON *", "0 0 12 ? * WED *", "0 0 12 ? * THU *");
+        ZonedDateTime dateTime = ZonedDateTime.of(2019, 11, 10, 9, 0, 0, 0, ZoneId.of(calendar.getTimezone()));
         String nearestCron = SchedulerUtil.getNearestCron(cronExpressionList, dateTime);
-        Assert.assertEquals("0 0 12 ? * WED *", nearestCron);
+        Assert.assertEquals("0 0 12 ? * MON *", nearestCron);
     }
 
     @Test

@@ -153,7 +153,7 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
         if (schedule.isSetDelay()) {
             SchedulerCalculatorConfig calculatorConfig = SchedulerCalculatorConfig.builder()
                     .startTime(currentDateTime.toLocalDateTime())
-                    .months(schedule.getDelay().getDays())
+                    .months(schedule.getDelay().getMonths())
                     .days(schedule.getDelay().getDays())
                     .hours(schedule.getDelay().getHours())
                     .minutes(schedule.getDelay().getMinutes())

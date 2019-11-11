@@ -1,22 +1,16 @@
 package com.rbkmoney.schedulator.cron;
 
-import com.opencsv.CSVReader;
-import com.rbkmoney.damsel.base.Month;
 import com.rbkmoney.damsel.domain.Calendar;
-import com.rbkmoney.damsel.domain.CalendarHoliday;
 import com.rbkmoney.schedulator.util.SchedulerUtilTest;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.TimeZone;
 
 @RunWith(SpringRunner.class)
 public class SchedulerCalculatorTest {

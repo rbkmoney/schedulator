@@ -176,8 +176,7 @@ public class SchedulerUtil {
             Optional<ZonedDateTime> cronNextExec = ExecutionTime.forCron(cron).nextExecution(dateTime);
 
             if (nearestCronNextExec.isPresent() && cronNextExec.isPresent()) {
-                int res = nearestCronNextExec.get().compareTo(cronNextExec.get());
-                if (res > 0) {
+                if (nearestCronNextExec.get().isAfter(cronNextExec.get())) {
                     nearestCronExpression = cronExpression;
                 }
             }
