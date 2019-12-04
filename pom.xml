@@ -27,7 +27,7 @@
         <sonar.jacoco.reportPath>${project.basedir}/target/jacoco.exec</sonar.jacoco.reportPath>
         <shared.resources.version>0.3.6</shared.resources.version>
         <woody-thrift.version>1.1.15</woody-thrift.version>
-        <schedulator-proto.version>1.14-eecbfda</schedulator-proto.version>
+        <schedulator-proto.version>1.11-efc08c2</schedulator-proto.version>
         <machinarium.version>0.2.8</machinarium.version>
         <cronutils.version>9.0.1</cronutils.version>
     </properties>

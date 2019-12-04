@@ -55,6 +55,9 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
         try {
             ByteBuffer contextValidationRequest = ByteBuffer.wrap(scheduleJobRegistered.getContext());
             ContextValidationResponse contextValidationResponse = validateExecutionContext(scheduleJobRegistered.getExecutorServicePath(), contextValidationRequest);
+
+            log.info("Context validation response: {}", contextValidationResponse);
+
             ScheduleContextValidated scheduleContextValidated = new ScheduleContextValidated(contextValidationRequest, contextValidationResponse);
             ScheduleChange scheduleChangeValidated = ScheduleChange.schedule_context_validated(scheduleContextValidated);
             ScheduledJobContext scheduledJobContext = getScheduledJobContext(scheduleJobRegistered);
@@ -95,6 +98,7 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
             executeJobRequest.setServiceExecutionContext(scheduleJobRegistered.getContext());
 
             // Execute remote client
+            log.info("Execute job for '{}'", url);
             ScheduledJobExecutorSrv.Iface remoteClient = remoteClientManager.getRemoteClient(url);
             ByteBuffer genericServiceExecutionContext = remoteClient.executeJob(executeJobRequest);
 
@@ -137,6 +141,7 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
     }
 
     private ContextValidationResponse validateExecutionContext(String url, ByteBuffer context) throws TException {
+        log.info("Call validation context for '{}'", url);
         ScheduledJobExecutorSrv.Iface client = remoteClientManager.getRemoteClient(url);
         try {
             return client.validateExecutionContext(context);
@@ -181,12 +186,13 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
 
     private ScheduledJobContext getScheduledJobContext(ScheduleJobRegistered scheduleJobRegistered) {
         DominantBasedSchedule dominantSchedule = scheduleJobRegistered.getSchedule().getDominantSchedule();
+        log.info("Get scheduler job context from dominant: {}", dominantSchedule);
         BusinessSchedule businessSchedule = dominantService.getBusinessSchedule(dominantSchedule.getBusinessScheduleRef(), dominantSchedule.getRevision());
         Calendar calendar = dominantService.getCalendar(dominantSchedule.getCalendarRef(), dominantSchedule.getRevision());
-        return getScheduledJobContext(calendar, businessSchedule);
+        return buildScheduleJobContext(calendar, businessSchedule);
     }
 
-    private ScheduledJobContext getScheduledJobContext(Calendar calendar, BusinessSchedule schedule) {
+    private ScheduledJobContext buildScheduleJobContext(Calendar calendar, BusinessSchedule schedule) {
         SchedulerCalculator schedulerCalculator = buildSchedulerCalculator(calendar, schedule);
         SchedulerComputeResult calcResult = schedulerCalculator.computeFireTime();
 

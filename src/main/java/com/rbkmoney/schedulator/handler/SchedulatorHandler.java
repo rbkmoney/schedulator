@@ -37,6 +37,7 @@ public class SchedulatorHandler implements SchedulatorSrv.Iface {
 
         ScheduleChange scheduleChange = ScheduleChange.schedule_job_registered(jobRegistered);
         try {
+            log.info("Start 'MachineGun' automation: scheduleId {}, scheduleChange {}", scheduleId, scheduleChange);
             automatonClient.start(scheduleId, scheduleChange);
         } catch (MachineAlreadyExistsException e) {
             throw new ScheduleAlreadyExists();
@@ -47,13 +48,12 @@ public class SchedulatorHandler implements SchedulatorSrv.Iface {
             throw new IllegalStateException("Incorrect state of machine " + scheduleId);
         }
 
-        ContextValidationResponse response = events.get(1).getData().getScheduleContextValidated().getResponse();
-        if (response.isSetErrors()) {
-            if (!response.getErrors().isEmpty()) {
-                throw new BadContextProvided(response);
+        ContextValidationResponse validationResponse = events.get(1).getData().getScheduleContextValidated().getResponse();
+        if (validationResponse.getResponseStatus().isSetFailed()) {
+            if (!validationResponse.getResponseStatus().getFailed().getErrors().isEmpty()) {
+                throw new BadContextProvided(validationResponse);
             }
         }
-
         log.info("Job with scheduleId {} successfully registered", scheduleId);
     }
 
