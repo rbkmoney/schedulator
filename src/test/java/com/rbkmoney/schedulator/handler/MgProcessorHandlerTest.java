@@ -1,4 +1,4 @@
-package com.rbkmoney.schedulator;
+package com.rbkmoney.schedulator.handler;
 
 import com.rbkmoney.damsel.base.DayOfWeek;
 import com.rbkmoney.damsel.base.Month;
@@ -10,6 +10,7 @@ import com.rbkmoney.damsel.schedule.*;
 import com.rbkmoney.geck.serializer.Geck;
 import com.rbkmoney.machinegun.msgpack.Value;
 import com.rbkmoney.machinegun.stateproc.*;
+import com.rbkmoney.schedulator.ScheduleTestData;
 import com.rbkmoney.schedulator.exception.NotFoundException;
 import com.rbkmoney.schedulator.handler.RemoteClientManager;
 import com.rbkmoney.schedulator.service.DominantService;
@@ -65,11 +66,11 @@ public class MgProcessorHandlerTest {
         when(jobExecutorMock.executeJob(any(ExecuteJobRequest.class))).thenReturn(ByteBuffer.wrap(new byte[0]));
         when(remoteClientManagerMock.getRemoteClient(anyString())).thenReturn(jobExecutorMock);
 
-        BusinessSchedule schedule = SchedulerUtilTest.buildSchedule(2018, Month.Apr, (byte) 4, DayOfWeek.Fri, (byte) 7, null, null);
+        BusinessSchedule schedule = ScheduleTestData.buildSchedule(2018, Month.Apr, (byte) 4, DayOfWeek.Fri, (byte) 7, null, null);
 
         when(dominantServiceMock.getBusinessSchedule(any(BusinessScheduleRef.class), anyLong())).thenReturn(schedule);
 
-        Calendar calendar = SchedulerUtilTest.buildTestCalendar();
+        Calendar calendar = ScheduleTestData.buildTestCalendar();
 
         when(dominantServiceMock.getCalendar(any(CalendarRef.class), anyLong())).thenReturn(calendar);
     }

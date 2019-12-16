@@ -38,7 +38,7 @@ public class ScheduleCalculatorMachineEventHandler extends BaseMachineEventHandl
 
             String url = scheduleJobRegistered.getExecutorServicePath();
 
-            // Build timer job
+            // Calculate next execution time
             ExecuteJobRequest executeJobRequest = new ExecuteJobRequest();
             ScheduledJobContext scheduledJobContext = scheduleJobService.getScheduledJobContext(scheduleJobRegistered);
             executeJobRequest.setScheduledJobContext(scheduledJobContext);
@@ -49,6 +49,7 @@ public class ScheduleCalculatorMachineEventHandler extends BaseMachineEventHandl
             ScheduledJobExecutorSrv.Iface remoteClient = remoteClientManager.getRemoteClient(url);
             ByteBuffer genericServiceExecutionContext = remoteClient.executeJob(executeJobRequest);
 
+            // Build timeout signal result
             ScheduleChange scheduleChange = ScheduleChange.schedule_job_executed(
                     new ScheduleJobExecuted(executeJobRequest, genericServiceExecutionContext)
             );

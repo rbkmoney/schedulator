@@ -53,11 +53,13 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
         log.info("Request processSignalInit() machineId: {} scheduleChangeRegistered: {}", machineId, scheduleChangeRegistered);
         ScheduleJobRegistered scheduleJobRegistered = scheduleChangeRegistered.getScheduleJobRegistered();
         try {
+            // Validate execution context (call remote service)
             ByteBuffer contextValidationRequest = ByteBuffer.wrap(scheduleJobRegistered.getContext());
+            log.info("Call validation context for '{}'", scheduleJobRegistered.getExecutorServicePath());
             ContextValidationResponse contextValidationResponse = validateExecutionContext(scheduleJobRegistered.getExecutorServicePath(), contextValidationRequest);
-
             log.info("Context validation response: {}", contextValidationResponse);
 
+            // Calculate next execution time
             ScheduleContextValidated scheduleContextValidated = new ScheduleContextValidated(contextValidationRequest, contextValidationResponse);
             ScheduleChange scheduleChangeValidated = ScheduleChange.schedule_context_validated(scheduleContextValidated);
             ScheduledJobContext scheduledJobContext = scheduleJobService.getScheduledJobContext(scheduleJobRegistered);
@@ -92,6 +94,7 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
 
         // Handle deregister event
         if (scheduleJobDeregisteredEventOptional.isPresent()) {
+            log.info("Process job deregister event for machineId: {}", machineId);
             return processEvent(machineId, scheduleJobDeregisteredEventOptional.get());
         }
 
@@ -102,6 +105,7 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
                 .orElseThrow(() -> new NotFoundException("Couldn't found ScheduleJobRegistered for machineId = " + machineId));
 
         // Handle register event
+        log.info("Process job register event for machineId: {}", machineId);
         return processEvent(machineId, scheduleJobRegisteredEvent);
     }
 
@@ -134,7 +138,6 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
     }
 
     private ContextValidationResponse validateExecutionContext(String url, ByteBuffer context) throws TException {
-        log.info("Call validation context for '{}'", url);
         ScheduledJobExecutorSrv.Iface client = remoteClientManager.getRemoteClient(url);
         try {
             return client.validateExecutionContext(context);

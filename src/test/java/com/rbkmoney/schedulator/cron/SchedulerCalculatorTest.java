@@ -1,6 +1,7 @@
 package com.rbkmoney.schedulator.cron;
 
 import com.rbkmoney.damsel.domain.Calendar;
+import com.rbkmoney.schedulator.ScheduleTestData;
 import com.rbkmoney.schedulator.util.SchedulerUtilTest;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -21,7 +22,7 @@ public class SchedulerCalculatorTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        calendar = SchedulerUtilTest.buildTestCalendar();
+        calendar = ScheduleTestData.buildTestCalendar();
         timeZone = TimeZone.getTimeZone(calendar.getTimezone());
     }
 

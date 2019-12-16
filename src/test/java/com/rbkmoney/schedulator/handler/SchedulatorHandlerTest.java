@@ -1,4 +1,4 @@
-package com.rbkmoney.schedulator;
+package com.rbkmoney.schedulator.handler;
 
 import com.rbkmoney.damsel.domain.BusinessScheduleRef;
 import com.rbkmoney.damsel.domain.CalendarRef;
