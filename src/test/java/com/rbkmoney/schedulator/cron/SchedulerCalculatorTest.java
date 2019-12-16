@@ -28,7 +28,7 @@ public class SchedulerCalculatorTest {
     @Test
     public void testEveryDayOnWeekends() {
         LocalDateTime startTime = LocalDateTime.of(2018, java.time.Month.JANUARY, 12, 0, 0, 0);
-        SchedulerCalculatorConfig calculatorConfig = new SchedulerCalculatorConfig(startTime, 0, 0, 0, 1, 0, 0);
+        SchedulerCalculatorConfig calculatorConfig = new SchedulerCalculatorConfig(startTime, 2018, 0, 0, 0, 1, 0, 0);
         SchedulerCalculator schedulerCalculator = new SchedulerCalculator("0 0 20 ? * * *", calendar, calculatorConfig);
 
         SchedulerComputeResult firstCalc = schedulerCalculator.computeFireTime();
@@ -43,7 +43,7 @@ public class SchedulerCalculatorTest {
     @Test
     public void testStartOfMonthOnThirdWorkingDayMay() {
         LocalDateTime startTime = LocalDateTime.of(2018, java.time.Month.APRIL, 24, 0, 0, 0);
-        SchedulerCalculatorConfig calculatorConfig = new SchedulerCalculatorConfig(startTime, 0, 0, 2, 0, 0, 0);
+        SchedulerCalculatorConfig calculatorConfig = new SchedulerCalculatorConfig(startTime, 2018, 0, 0, 2, 0, 0, 0);
         SchedulerCalculator schedulerCalculator = new SchedulerCalculator("0 0 0 1 * ? *", calendar, calculatorConfig);
 
         SchedulerComputeResult firstCalc = schedulerCalculator.computeFireTime();
@@ -62,7 +62,7 @@ public class SchedulerCalculatorTest {
     @Test
     public void testStartOfMonthOnThirdWorkingDayYearStart() {
         LocalDateTime startTime = LocalDateTime.of(2017, java.time.Month.DECEMBER, 29, 0, 0, 0);
-        SchedulerCalculatorConfig calculatorConfig = new SchedulerCalculatorConfig(startTime, 0, 0, 2, 0, 0, 0);
+        SchedulerCalculatorConfig calculatorConfig = new SchedulerCalculatorConfig(startTime, 2018, 0, 0, 2, 0, 0, 0);
         SchedulerCalculator schedulerCalculator = new SchedulerCalculator("0 0 0 1 * ? *", calendar, calculatorConfig);
 
         SchedulerComputeResult firstCalc = schedulerCalculator.computeFireTime();
@@ -81,7 +81,7 @@ public class SchedulerCalculatorTest {
     @Test
     public void testStartOfWeekOnThirdWorkingDayApril() {
         LocalDateTime startTime = LocalDateTime.of(2018, java.time.Month.APRIL, 24, 0, 0, 0);
-        SchedulerCalculatorConfig calculatorConfig = new SchedulerCalculatorConfig(startTime, 0, 0, 2, 0, 0, 0);
+        SchedulerCalculatorConfig calculatorConfig = new SchedulerCalculatorConfig(startTime, 2018, 0, 0, 2, 0, 0, 0);
         SchedulerCalculator schedulerCalculator = new SchedulerCalculator("0 0 0 ? * MON *", calendar, calculatorConfig);
 
         SchedulerComputeResult firstCalc = schedulerCalculator.computeFireTime();
@@ -100,7 +100,7 @@ public class SchedulerCalculatorTest {
     @Test
     public void testStartOfWeekOnThirdWorkingNewYearHoliday() {
         LocalDateTime startTime = LocalDateTime.of(2017, java.time.Month.DECEMBER, 29, 0, 0, 0);
-        SchedulerCalculatorConfig calculatorConfig = new SchedulerCalculatorConfig(startTime, 0, 0, 2, 0, 0, 0);
+        SchedulerCalculatorConfig calculatorConfig = new SchedulerCalculatorConfig(startTime, 2018, 0, 0, 2, 0, 0, 0);
         SchedulerCalculator schedulerCalculator = new SchedulerCalculator("0 0 0 ? * MON *", calendar, calculatorConfig);
 
         SchedulerComputeResult firstCalc = schedulerCalculator.computeFireTime();
@@ -119,7 +119,7 @@ public class SchedulerCalculatorTest {
     @Test
     public void testEveryDayOnThirdWorkingDayNewYearHoliday() {
         LocalDateTime startTime = LocalDateTime.of(2017, java.time.Month.DECEMBER, 29, 0, 0, 0);
-        SchedulerCalculatorConfig calculatorConfig = new SchedulerCalculatorConfig(startTime, 0, 0, 2, 0, 0, 0);
+        SchedulerCalculatorConfig calculatorConfig = new SchedulerCalculatorConfig(startTime, 2018, 0, 0, 2, 0, 0, 0);
         SchedulerCalculator schedulerCalculator = new SchedulerCalculator("0 0 0 * * ? *", calendar, calculatorConfig);
 
         SchedulerComputeResult firstCalc = schedulerCalculator.computeFireTime();
@@ -146,7 +146,7 @@ public class SchedulerCalculatorTest {
     @Test
     public void testEveryDayOnThirdWorkingDayMarchHoliday() {
         LocalDateTime startTime = LocalDateTime.of(2018, java.time.Month.MARCH, 6, 0, 0, 0);
-        SchedulerCalculatorConfig calculatorConfig = new SchedulerCalculatorConfig(startTime, 0, 0, 2, 0, 0, 0);
+        SchedulerCalculatorConfig calculatorConfig = new SchedulerCalculatorConfig(startTime, 2018, 0, 0, 2, 0, 0, 0);
         SchedulerCalculator schedulerCalculator = new SchedulerCalculator("0 0 0 * * ? *", calendar, calculatorConfig);
 
         SchedulerComputeResult firstCalc = schedulerCalculator.computeFireTime();
@@ -173,7 +173,7 @@ public class SchedulerCalculatorTest {
     @Test
     public void testEveryDayAtEndOfDay() {
         LocalDateTime startTime = LocalDateTime.of(2018, java.time.Month.MARCH, 7, 0, 0, 0);
-        SchedulerCalculatorConfig calculatorConfig = new SchedulerCalculatorConfig(startTime, 0, 0, 0, 0, 0, 0);
+        SchedulerCalculatorConfig calculatorConfig = new SchedulerCalculatorConfig(startTime, 2018, 0, 0, 0, 0, 0, 0);
         SchedulerCalculator schedulerCalculator = new SchedulerCalculator("0 0 0 1/1 * ? *", calendar, calculatorConfig);
 
         SchedulerComputeResult firstCalc = schedulerCalculator.computeFireTime();

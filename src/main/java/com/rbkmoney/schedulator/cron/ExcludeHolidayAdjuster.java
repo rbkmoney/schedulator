@@ -2,17 +2,26 @@ package com.rbkmoney.schedulator.cron;
 
 import com.rbkmoney.damsel.domain.Calendar;
 import com.rbkmoney.damsel.domain.CalendarHoliday;
-import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjuster;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-@RequiredArgsConstructor
 public class ExcludeHolidayAdjuster implements DateAdjuster {
 
     private final Calendar calendar;
+
+    private final Integer calendarYear;
+
+    public ExcludeHolidayAdjuster(Calendar calendar, Integer calendarYear) {
+        this.calendar = Objects.requireNonNull(calendar, "calendar can't be null");
+        if (calendarYear == null || calendarYear <= 0) {
+            throw new IllegalArgumentException("Not valid 'calendarYear' variable: " + calendarYear);
+        }
+        this.calendarYear = calendarYear;
+    }
 
     @Override
     public TemporalAdjuster adjust(long days, long hour, long minutes, long seconds) {
@@ -66,9 +75,9 @@ public class ExcludeHolidayAdjuster implements DateAdjuster {
     }
 
     private boolean isHoliday(LocalDateTime date) {
-        Set<CalendarHoliday> calendarHolidays = calendar.getHolidays().get(date.getYear());
+        Set<CalendarHoliday> calendarHolidays = calendar.getHolidays().get(calendarYear);
         if (calendarHolidays == null) {
-            throw new IllegalStateException("Year '" + date.getYear() + "' not found on calendar");
+            throw new IllegalStateException("Year '" + calendarYear + "' not found on calendar");
         }
         return calendarHolidays.stream()
                 .anyMatch(calendarHoliday -> {

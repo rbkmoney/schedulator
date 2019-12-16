@@ -44,7 +44,7 @@ public class SchedulatorHandler implements SchedulatorSrv.Iface {
         }
 
         List<TMachineEvent<ScheduleChange>> events = automatonClient.getEvents(scheduleId);
-        log.info("ScheduleId '{}' events: {}", scheduleId, events);
+        log.info("ScheduleId '{}' events size: {}", scheduleId, events.size());
         if (!isScheduleContextValidated(events)) {
             throw new IllegalStateException("Incorrect state of machine " + scheduleId);
         }

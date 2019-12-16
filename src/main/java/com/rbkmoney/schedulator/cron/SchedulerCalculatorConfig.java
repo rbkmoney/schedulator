@@ -11,16 +11,18 @@ public class SchedulerCalculatorConfig {
 
     LocalDateTime startTime;
 
-    private int years;
+    private int calendarYear;
 
-    private int months;
+    private int delayYears;
 
-    private int days;
+    private int delayMonths;
 
-    private int hours;
+    private int delayDays;
 
-    private int minutes;
+    private int delayHours;
 
-    private int seconds;
+    private int delayMinutes;
+
+    private int delaySeconds;
 
 }

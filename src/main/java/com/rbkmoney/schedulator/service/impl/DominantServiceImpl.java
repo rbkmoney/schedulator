@@ -7,7 +7,6 @@ import com.rbkmoney.damsel.domain.CalendarRef;
 import com.rbkmoney.damsel.domain_config.*;
 import com.rbkmoney.schedulator.exception.NotFoundException;
 import com.rbkmoney.schedulator.service.DominantService;
-import com.rbkmoney.woody.api.flow.error.WUndefinedResultException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.thrift.TException;
