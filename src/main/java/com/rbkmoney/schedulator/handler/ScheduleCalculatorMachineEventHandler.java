@@ -34,7 +34,7 @@ public class ScheduleCalculatorMachineEventHandler extends BaseMachineEventHandl
     @Override
     protected SignalResultData<ScheduleChange> handleEvent(TMachineEvent<ScheduleChange> machineEvent) throws MachineEventHandleException {
         try {
-            ScheduleJobRegistered scheduleJobRegistered = (ScheduleJobRegistered) machineEvent.getData().getScheduleJobRegistered();
+            ScheduleJobRegistered scheduleJobRegistered = machineEvent.getData().getScheduleJobRegistered();
 
             String url = scheduleJobRegistered.getExecutorServicePath();
 
@@ -69,7 +69,7 @@ public class ScheduleCalculatorMachineEventHandler extends BaseMachineEventHandl
     }
 
     @Override
-    public boolean isNeedToHandle(TMachineEvent<ScheduleChange> machineEvent) {
+    public boolean isHandle(TMachineEvent<ScheduleChange> machineEvent) {
         return machineEvent.getData().isSetScheduleJobRegistered();
     }
 

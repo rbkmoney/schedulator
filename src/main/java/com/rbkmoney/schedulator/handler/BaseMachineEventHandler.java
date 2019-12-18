@@ -18,18 +18,18 @@ public abstract class BaseMachineEventHandler<T> implements MachineEventHandler<
 
     @Override
     public final SignalResultData<T> handle(TMachineEvent<T> machineEvent) throws MachineEventHandleException {
-        if (isNeedToHandle(machineEvent)) {
+        if (isHandle(machineEvent)) {
             return handleEvent(machineEvent);
-        } else {
-            if (nextMachineEventHandler != null) {
-                 return nextMachineEventHandler.handle(machineEvent);
-            }
         }
-        return null;
+        if (nextMachineEventHandler != null) {
+            return nextMachineEventHandler.handle(machineEvent);
+        } else {
+            throw new MachineEventHandleException(String.format("Empty next event handler. Event '%s'", machineEvent));
+        }
     }
 
     protected abstract SignalResultData<T> handleEvent(TMachineEvent<T> machineEvent) throws MachineEventHandleException;
 
-    protected abstract boolean isNeedToHandle(TMachineEvent<T> machineEvent);
+    protected abstract boolean isHandle(TMachineEvent<T> machineEvent);
 
 }

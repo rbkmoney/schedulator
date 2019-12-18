@@ -30,6 +30,7 @@
         <schedulator-proto.version>1.11-efc08c2</schedulator-proto.version>
         <machinarium.version>0.2.8</machinarium.version>
         <cronutils.version>9.0.1</cronutils.version>
+        <damsel.version>1.336-b563890</damsel.version>
     </properties>
 
     <dependencies>
@@ -58,6 +59,11 @@
             <groupId>com.rbkmoney</groupId>
             <artifactId>machinarium</artifactId>
             <version>${machinarium.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.rbkmoney</groupId>
+            <artifactId>damsel</artifactId>
+            <version>${damsel.version}</version>
         </dependency>
         <!--spring-->
         <dependency>

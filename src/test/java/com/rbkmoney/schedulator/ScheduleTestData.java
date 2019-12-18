@@ -73,50 +73,80 @@ public class ScheduleTestData {
         scheduleMonth.setOn(Set.of(month));
         schedule.setMonth(scheduleMonth);
 
-        ScheduleFragment scheduleDayOfMonth = new ScheduleFragment();
-        if (dayOfMonth == null) {
-            scheduleDayOfMonth.setEvery(new ScheduleEvery());
-        } else {
-            scheduleDayOfMonth.setOn(Set.of(dayOfMonth));
-        }
+        ScheduleFragment scheduleDayOfMonth = buildScheduleDayOfMonth(dayOfMonth);
         schedule.setDayOfMonth(scheduleDayOfMonth);
 
-        ScheduleDayOfWeek scheduleDayOfWeek = new ScheduleDayOfWeek();
-        if (dayOfWeek == null) {
-            scheduleDayOfWeek.setEvery(new ScheduleEvery());
-        } else {
-            scheduleDayOfWeek.setOn(Set.of(dayOfWeek));
-        }
+        ScheduleDayOfWeek scheduleDayOfWeek = buildScheduleDayOfWeek(dayOfWeek);
         schedule.setDayOfWeek(scheduleDayOfWeek);
 
-        ScheduleFragment scheduleHour = new ScheduleFragment();
-        if (hour == null) {
-            scheduleHour.setEvery(new ScheduleEvery());
-        } else {
-            scheduleHour.setOn(Set.of(hour));
-        }
+        ScheduleFragment scheduleHour = buildScheduleHour(hour);
         schedule.setHour(scheduleHour);
 
-        ScheduleFragment scheduleMinute = new ScheduleFragment();
-        if (minute == null) {
-            scheduleMinute.setEvery(new ScheduleEvery());
-        } else {
-            scheduleMinute.setOn(Set.of(minute));
-        }
+        ScheduleFragment scheduleMinute = buildScheduleMinute(minute);
         schedule.setMinute(scheduleMinute);
 
-        ScheduleFragment scheduleSecond = new ScheduleFragment();
-        if (second == null) {
-            scheduleSecond.setEvery(new ScheduleEvery());
-        } else {
-            scheduleSecond.setOn(Set.of(second));
-        }
+        ScheduleFragment scheduleSecond = buildScheduleSecond(second);
         schedule.setSecond(scheduleSecond);
 
         BusinessSchedule businessSchedule = new BusinessSchedule();
         businessSchedule.setSchedule(schedule);
 
         return businessSchedule;
+    }
+
+    private static ScheduleFragment buildScheduleDayOfMonth(Byte dayOfMonth) {
+        ScheduleFragment scheduleDayOfMonth = new ScheduleFragment();
+        if (dayOfMonth == null) {
+            scheduleDayOfMonth.setEvery(new ScheduleEvery());
+        } else {
+            scheduleDayOfMonth.setOn(Set.of(dayOfMonth));
+        }
+
+        return scheduleDayOfMonth;
+    }
+
+    private static ScheduleDayOfWeek buildScheduleDayOfWeek(DayOfWeek dayOfWeek) {
+        ScheduleDayOfWeek scheduleDayOfWeek = new ScheduleDayOfWeek();
+        if (dayOfWeek == null) {
+            scheduleDayOfWeek.setEvery(new ScheduleEvery());
+        } else {
+            scheduleDayOfWeek.setOn(Set.of(dayOfWeek));
+        }
+
+        return scheduleDayOfWeek;
+    }
+
+    private static ScheduleFragment buildScheduleHour(Byte hour) {
+        ScheduleFragment scheduleHour = new ScheduleFragment();
+        if (hour == null) {
+            scheduleHour.setEvery(new ScheduleEvery());
+        } else {
+            scheduleHour.setOn(Set.of(hour));
+        }
+
+        return scheduleHour;
+    }
+
+    private static ScheduleFragment buildScheduleMinute(Byte minute) {
+        ScheduleFragment scheduleMinute = new ScheduleFragment();
+        if (minute == null) {
+            scheduleMinute.setEvery(new ScheduleEvery());
+        } else {
+            scheduleMinute.setOn(Set.of(minute));
+        }
+
+        return scheduleMinute;
+    }
+
+    private static ScheduleFragment buildScheduleSecond(Byte second) {
+        ScheduleFragment scheduleSecond = new ScheduleFragment();
+        if (second == null) {
+            scheduleSecond.setEvery(new ScheduleEvery());
+        } else {
+            scheduleSecond.setOn(Set.of(second));
+        }
+
+        return scheduleSecond;
     }
 
 }

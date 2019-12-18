@@ -21,8 +21,6 @@ public class SchedulerCalculator {
 
     private final Cron cron;
 
-    private final Calendar calendar;
-
     private final SchedulerCalculatorConfig calculatorConfig;
 
     private final DateAdjuster dateAdjuster;
@@ -39,7 +37,6 @@ public class SchedulerCalculator {
         Preconditions.checkNotNull(cronExpression, "cronExpression can't be null");
         Preconditions.checkNotNull(calculatorConfig.getStartTime(), "startTime can't be null");
         this.cron = SchedulerUtil.QUARTZ_CRON_PARSER.parse(cronExpression).validate();
-        this.calendar = calendar;
         this.calculatorConfig = calculatorConfig;
         this.dateAdjuster = new ExcludeHolidayAdjuster(calendar, calculatorConfig.getCalendarYear());
         this.timeZone = TimeZone.getTimeZone(calendar.getTimezone());
@@ -49,10 +46,6 @@ public class SchedulerCalculator {
         List<String> cronList = SchedulerUtil.buildCron(schedule.getSchedule(), Optional.ofNullable(calendar.getFirstDayOfWeek()));
         String cron = SchedulerUtil.getNearestCron(cronList, startDateTime);
         Integer year = getYear(schedule.getSchedule().getYear());
-        if (year == null) {
-            throw new IllegalStateException("Schedule year can't be null");
-        }
-        SchedulerCalculator schedulerCalculator = null;
         if (schedule.isSetDelay()) {
             SchedulerCalculatorConfig calculatorConfig = SchedulerCalculatorConfig.builder()
                     .calendarYear(year)
@@ -64,15 +57,14 @@ public class SchedulerCalculator {
                     .delayMinutes(schedule.getDelay().getMinutes())
                     .delaySeconds(schedule.getDelay().getSeconds())
                     .build();
-            schedulerCalculator = new SchedulerCalculator(cron, calendar, calculatorConfig);
+            return new SchedulerCalculator(cron, calendar, calculatorConfig);
         } else {
             SchedulerCalculatorConfig calculatorConfig = SchedulerCalculatorConfig.builder()
                     .calendarYear(year)
                     .startTime(startDateTime.toLocalDateTime())
                     .build();
-            schedulerCalculator = new SchedulerCalculator(cron, calendar, calculatorConfig);
+            return new SchedulerCalculator(cron, calendar, calculatorConfig);
         }
-        return schedulerCalculator;
     }
 
     private static Integer getYear(ScheduleYear scheduleYear) {
@@ -83,7 +75,7 @@ public class SchedulerCalculator {
                     .findFirst()
                     .orElse(LocalDateTime.now().getYear());
         }
-        return null;
+        throw new IllegalStateException("Schedule year can't be null");
     }
 
     public SchedulerComputeResult computeFireTime() {
@@ -180,15 +172,6 @@ public class SchedulerCalculator {
                 .nextFireTime(nextFireTime)
                 .nextCronTime(nextCronTime)
                 .build();
-    }
-
-    private LocalDateTime findPrevCronExecution(LocalDateTime date) {
-        ZonedDateTime nextCronTime = ExecutionTime.forCron(cron)
-                .lastExecution(date.atZone(timeZone.toZoneId()))
-                .orElseThrow(() -> {
-                    throw new IllegalStateException(String.format("Can't get lastExecution for cron '%s' with '%s'", cron.asString(), date));
-                });
-        return nextCronTime.toLocalDateTime();
     }
 
     private LocalDateTime findNextCronExecution(LocalDateTime date) {

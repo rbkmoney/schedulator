@@ -29,7 +29,7 @@ public class RemoveMachineEventHandler extends BaseMachineEventHandler<ScheduleC
     }
 
     @Override
-    public boolean isNeedToHandle(TMachineEvent<ScheduleChange> machineEvent) {
+    public boolean isHandle(TMachineEvent<ScheduleChange> machineEvent) {
         return machineEvent.getData().isSetScheduleJobDeregistered();
     }
 

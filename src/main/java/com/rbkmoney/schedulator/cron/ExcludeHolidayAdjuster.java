@@ -80,12 +80,8 @@ public class ExcludeHolidayAdjuster implements DateAdjuster {
             throw new IllegalStateException("Year '" + calendarYear + "' not found on calendar");
         }
         return calendarHolidays.stream()
-                .anyMatch(calendarHoliday -> {
-                    if (calendarHoliday.getMonth().getValue() == date.getMonth().getValue()) {
-                        return calendarHoliday.getDay() == date.getDayOfMonth();
-                    }
-                    return false;
-                });
+                .anyMatch(calendarHoliday -> calendarHoliday.getMonth().getValue() == date.getMonth().getValue()
+                        && calendarHoliday.getDay() == date.getDayOfMonth());
     }
 
 }
