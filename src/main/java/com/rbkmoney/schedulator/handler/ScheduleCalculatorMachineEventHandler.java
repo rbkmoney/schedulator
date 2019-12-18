@@ -69,7 +69,7 @@ public class ScheduleCalculatorMachineEventHandler extends BaseMachineEventHandl
     }
 
     @Override
-    public boolean isHandle(TMachineEvent<ScheduleChange> machineEvent) {
+    public boolean canHandle(TMachineEvent<ScheduleChange> machineEvent) {
         return machineEvent.getData().isSetScheduleJobRegistered();
     }
 

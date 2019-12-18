@@ -18,7 +18,7 @@ public abstract class BaseMachineEventHandler<T> implements MachineEventHandler<
 
     @Override
     public final SignalResultData<T> handle(TMachineEvent<T> machineEvent) throws MachineEventHandleException {
-        if (isHandle(machineEvent)) {
+        if (canHandle(machineEvent)) {
             return handleEvent(machineEvent);
         }
         if (nextMachineEventHandler != null) {
@@ -30,6 +30,6 @@ public abstract class BaseMachineEventHandler<T> implements MachineEventHandler<
 
     protected abstract SignalResultData<T> handleEvent(TMachineEvent<T> machineEvent) throws MachineEventHandleException;
 
-    protected abstract boolean isHandle(TMachineEvent<T> machineEvent);
+    protected abstract boolean canHandle(TMachineEvent<T> machineEvent);
 
 }

@@ -26,26 +26,27 @@ public class ScheduleTestData {
 
         ClassPathResource resource = new ClassPathResource("/data/calendar-test.csv");
         try (CSVReader reader = new CSVReader(new InputStreamReader(resource.getInputStream()))) {
-            reader.readNext();
+            reader.readNext(); // Ignore first line
 
             String[] row;
             Map<Integer, Set<CalendarHoliday>> years = new HashMap<>();
             while ((row = reader.readNext()) != null) {
                 Set<CalendarHoliday> calendarHolidays = new HashSet<>();
-                for (int monthValue = 1; monthValue <= 12; monthValue++) {
-                    Month month = Month.findByValue(monthValue);
-                    for (String day : row[monthValue].split(",")) {
-                        if (!day.endsWith("*")) {
-                            CalendarHoliday holiday = new CalendarHoliday();
-                            holiday.setName("holiday");
-                            holiday.setDay(Byte.parseByte(day));
-                            holiday.setMonth(month);
-                            calendarHolidays.add(holiday);
-                        }
-                    }
-                }
+
                 int year = Integer.parseInt(row[0]);
                 years.put(year, calendarHolidays);
+
+                for (Month month : Month.values()) {
+                    for (String day : row[month.getValue()].split(",")) {
+                        if (day.endsWith("*")) continue; // Ignore short work day
+
+                        CalendarHoliday holiday = new CalendarHoliday();
+                        holiday.setName("holiday");
+                        holiday.setDay(Byte.parseByte(day));
+                        holiday.setMonth(month);
+                        calendarHolidays.add(holiday);
+                    }
+                }
             }
             calendar.setHolidays(years);
         }
@@ -73,20 +74,15 @@ public class ScheduleTestData {
         scheduleMonth.setOn(Set.of(month));
         schedule.setMonth(scheduleMonth);
 
-        ScheduleFragment scheduleDayOfMonth = buildScheduleDayOfMonth(dayOfMonth);
-        schedule.setDayOfMonth(scheduleDayOfMonth);
+        schedule.setDayOfMonth(buildScheduleDayOfMonth(dayOfMonth));
 
-        ScheduleDayOfWeek scheduleDayOfWeek = buildScheduleDayOfWeek(dayOfWeek);
-        schedule.setDayOfWeek(scheduleDayOfWeek);
+        schedule.setDayOfWeek(buildScheduleDayOfWeek(dayOfWeek));
 
-        ScheduleFragment scheduleHour = buildScheduleHour(hour);
-        schedule.setHour(scheduleHour);
+        schedule.setHour(buildScheduleHour(hour));
 
-        ScheduleFragment scheduleMinute = buildScheduleMinute(minute);
-        schedule.setMinute(scheduleMinute);
+        schedule.setMinute(buildScheduleMinute(minute));
 
-        ScheduleFragment scheduleSecond = buildScheduleSecond(second);
-        schedule.setSecond(scheduleSecond);
+        schedule.setSecond(buildScheduleSecond(second));
 
         BusinessSchedule businessSchedule = new BusinessSchedule();
         businessSchedule.setSchedule(schedule);
