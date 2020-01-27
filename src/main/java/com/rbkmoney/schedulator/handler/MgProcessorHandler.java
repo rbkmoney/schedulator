@@ -52,32 +52,22 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
                                                                  ScheduleChange scheduleChangeRegistered) {
         log.info("Request processSignalInit() machineId: {} scheduleChangeRegistered: {}", machineId, scheduleChangeRegistered);
         ScheduleJobRegistered scheduleJobRegistered = scheduleChangeRegistered.getScheduleJobRegistered();
-        try {
-            // Validate execution context (call remote service)
-            ByteBuffer contextValidationRequest = ByteBuffer.wrap(scheduleJobRegistered.getContext());
-            log.info("Call validation context for '{}'", scheduleJobRegistered.getExecutorServicePath());
-            ContextValidationResponse contextValidationResponse = validateExecutionContext(scheduleJobRegistered.getExecutorServicePath(), contextValidationRequest);
-            log.info("Context validation response: {}", contextValidationResponse);
 
-            // Calculate next execution time
-            ScheduleContextValidated scheduleContextValidated = new ScheduleContextValidated(contextValidationRequest, contextValidationResponse);
-            ScheduleChange scheduleChangeValidated = ScheduleChange.schedule_context_validated(scheduleContextValidated);
-            ScheduledJobContext scheduledJobContext = scheduleJobService.getScheduledJobContext(scheduleJobRegistered);
-            ComplexAction complexAction = TimerActionHelper.buildTimerAction(scheduledJobContext.getNextFireTime());
-            SignalResultData<ScheduleChange> signalResultData = new SignalResultData<>(
-                    Value.nl(new Nil()),
-                    Arrays.asList(scheduleChangeRegistered, scheduleChangeValidated),
-                    complexAction);
-            log.info("Response of processSignalInit: {}", signalResultData);
+        // Validate execution context (call remote service)
+        ScheduleContextValidated scheduleContextValidated = validateRemoteContext(scheduleJobRegistered);
 
-            return signalResultData;
-        } catch (WUnavailableResultException e) {
-            log.warn("Couldn't call remote service. We will try again.", e);
-            throw e;
-        } catch (Exception e) {
-            log.warn("Couldn't processSignalInit, machineId={}, scheduleChangeRegistered={}", machineId, scheduleChangeRegistered, e);
-            throw new WUndefinedResultException(e);
-        }
+        // Calculate next execution time
+        ScheduleChange scheduleChangeValidated = ScheduleChange.schedule_context_validated(scheduleContextValidated);
+        ScheduledJobContext scheduledJobContext = scheduleJobService.getScheduledJobContext(scheduleJobRegistered);
+        ComplexAction complexAction = TimerActionHelper.buildTimerAction(scheduledJobContext.getNextFireTime());
+        log.info("Timer action: {}", complexAction);
+        SignalResultData<ScheduleChange> signalResultData = new SignalResultData<>(
+                Value.nl(new Nil()),
+                Arrays.asList(scheduleChangeRegistered, scheduleChangeValidated),
+                complexAction);
+        log.info("Response of processSignalInit: {}", signalResultData);
+
+        return signalResultData;
     }
 
     @Override
@@ -126,6 +116,23 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
                 complexAction);
         log.info("Response of processCall: {}", callResultData);
         return callResultData;
+    }
+
+    private ScheduleContextValidated validateRemoteContext(ScheduleJobRegistered scheduleJobRegistered) {
+        try {
+            ByteBuffer contextValidationRequest = ByteBuffer.wrap(scheduleJobRegistered.getContext());
+            log.info("Call validation context for '{}'", scheduleJobRegistered.getExecutorServicePath());
+            ContextValidationResponse contextValidationResponse = validateExecutionContext(scheduleJobRegistered.getExecutorServicePath(), contextValidationRequest);
+            log.info("Context validation response: {}", contextValidationResponse);
+
+            return new ScheduleContextValidated(contextValidationRequest, contextValidationResponse);
+        } catch (WUnavailableResultException e) {
+            log.error("Exception while 'validateExecutionContext'. Failed to call remote service", e);
+            throw e;
+        } catch (TException e) {
+            log.error("Unexpected exception while 'validateExecutionContext'");
+            throw new WUndefinedResultException(e);
+        }
     }
 
     private SignalResultData<ScheduleChange> processEvent(String machineId, TMachineEvent<ScheduleChange> event) {

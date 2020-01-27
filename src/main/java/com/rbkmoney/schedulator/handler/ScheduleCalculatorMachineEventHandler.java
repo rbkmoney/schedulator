@@ -34,6 +34,7 @@ public class ScheduleCalculatorMachineEventHandler extends BaseMachineEventHandl
     @Override
     protected SignalResultData<ScheduleChange> handleEvent(TMachineEvent<ScheduleChange> machineEvent) throws MachineEventHandleException {
         try {
+            log.info("Handle register schedule machine event");
             ScheduleJobRegistered scheduleJobRegistered = machineEvent.getData().getScheduleJobRegistered();
 
             String url = scheduleJobRegistered.getExecutorServicePath();
@@ -65,7 +66,6 @@ public class ScheduleCalculatorMachineEventHandler extends BaseMachineEventHandl
         } catch (TException e) {
             throw new MachineEventHandleException("Failed to handle timer job", e);
         }
-
     }
 
     @Override

@@ -21,6 +21,7 @@ public class RemoveMachineEventHandler extends BaseMachineEventHandler<ScheduleC
 
     @Override
     protected SignalResultData<ScheduleChange> handleEvent(TMachineEvent<ScheduleChange> machineEvent) {
+        log.info("Handle remove schedule machine event");
         ComplexAction removeAction = TimerActionHelper.buildRemoveAction();
 
         ScheduleChange scheduleJobDeregistered = ScheduleChange.schedule_job_deregistered(new ScheduleJobDeregistered());
