@@ -46,10 +46,10 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
     }
 
     @Override
-    protected SignalResultData<ScheduleChange> processSignalInit(String namespace,
-                                                                 String machineId,
-                                                                 Content machineState,
-                                                                 ScheduleChange scheduleChangeRegistered) {
+    public final SignalResultData<ScheduleChange> processSignalInit(String namespace,
+                                                              String machineId,
+                                                              Content machineState,
+                                                              ScheduleChange scheduleChangeRegistered) {
         log.info("Request processSignalInit() machineId: {} scheduleChangeRegistered: {}", machineId, scheduleChangeRegistered);
         ScheduleJobRegistered scheduleJobRegistered = scheduleChangeRegistered.getScheduleJobRegistered();
 
@@ -71,7 +71,7 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
     }
 
     @Override
-    protected SignalResultData<ScheduleChange> processSignalTimeout(String namespace,
+    public final SignalResultData<ScheduleChange> processSignalTimeout(String namespace,
                                                                     String machineId,
                                                                     Content machineState,
                                                                     List<TMachineEvent<ScheduleChange>> machineEventList) {
@@ -100,7 +100,7 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
     }
 
     @Override
-    protected CallResultData<ScheduleChange> processCall(String namespace,
+    public final CallResultData<ScheduleChange> processCall(String namespace,
                                                          String machineId,
                                                          ScheduleChange scheduleChange,
                                                          List<TMachineEvent<ScheduleChange>> machineEvents) {
