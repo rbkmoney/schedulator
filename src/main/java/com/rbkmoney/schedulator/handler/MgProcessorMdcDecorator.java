@@ -16,6 +16,8 @@ import java.util.Optional;
 @Slf4j
 public class MgProcessorMdcDecorator extends AbstractProcessorHandler<ScheduleChange, ScheduleChange> {
 
+    private static final String MACHINE_ID = "machine_id";
+
     private final MgProcessorHandler mgProcessorHandler;
 
     public MgProcessorMdcDecorator(MgProcessorHandler mgProcessorHandler) {
@@ -28,10 +30,14 @@ public class MgProcessorMdcDecorator extends AbstractProcessorHandler<ScheduleCh
                                                                  String machineId,
                                                                  Content machineState,
                                                                  ScheduleChange args) {
-        if (args.isSetScheduleJobRegistered()) {
-            MDC.put("machine_id", args.getScheduleJobRegistered().getScheduleId());
+        try {
+            if (args.isSetScheduleJobRegistered()) {
+                MDC.put(MACHINE_ID, args.getScheduleJobRegistered().getScheduleId());
+            }
+            return mgProcessorHandler.processSignalInit(namespace, machineId, machineState, args);
+        } finally {
+            MDC.clear();
         }
-        return mgProcessorHandler.processSignalInit(namespace, machineId, machineState, args);
     }
 
     @Override
@@ -39,14 +45,18 @@ public class MgProcessorMdcDecorator extends AbstractProcessorHandler<ScheduleCh
                                                                     String machineId,
                                                                     Content machineState,
                                                                     List<TMachineEvent<ScheduleChange>> machineEvents) {
-        Optional<TMachineEvent<ScheduleChange>> scheduleJobRegisteredEvent = machineEvents.stream()
-                .filter(machineEvent -> machineEvent.getData().isSetScheduleJobRegistered())
-                .findFirst();
-        if (scheduleJobRegisteredEvent.isPresent()) {
-            ScheduleJobRegistered scheduleJobRegistered = scheduleJobRegisteredEvent.get().getData().getScheduleJobRegistered();
-            MDC.put("machine_id", scheduleJobRegistered.getScheduleId());
+        try {
+            Optional<TMachineEvent<ScheduleChange>> scheduleJobRegisteredEvent = machineEvents.stream()
+                    .filter(machineEvent -> machineEvent.getData().isSetScheduleJobRegistered())
+                    .findFirst();
+            if (scheduleJobRegisteredEvent.isPresent()) {
+                ScheduleJobRegistered scheduleJobRegistered = scheduleJobRegisteredEvent.get().getData().getScheduleJobRegistered();
+                MDC.put(MACHINE_ID, scheduleJobRegistered.getScheduleId());
+            }
+            return mgProcessorHandler.processSignalTimeout(namespace, machineId, machineState, machineEvents);
+        } finally {
+            MDC.clear();
         }
-        return mgProcessorHandler.processSignalTimeout(namespace, machineId, machineState, machineEvents);
     }
 
     @Override
