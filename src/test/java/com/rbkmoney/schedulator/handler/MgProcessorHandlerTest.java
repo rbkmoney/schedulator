@@ -7,15 +7,15 @@ import com.rbkmoney.damsel.domain.BusinessScheduleRef;
 import com.rbkmoney.damsel.domain.Calendar;
 import com.rbkmoney.damsel.domain.CalendarRef;
 import com.rbkmoney.damsel.schedule.*;
+import com.rbkmoney.geck.common.util.TypeUtil;
 import com.rbkmoney.geck.serializer.Geck;
+import com.rbkmoney.machinegun.base.Timer;
 import com.rbkmoney.machinegun.msgpack.Value;
 import com.rbkmoney.machinegun.stateproc.*;
 import com.rbkmoney.schedulator.ScheduleTestData;
 import com.rbkmoney.schedulator.exception.NotFoundException;
-import com.rbkmoney.schedulator.handler.RemoteClientManager;
 import com.rbkmoney.schedulator.service.DominantService;
 import com.rbkmoney.schedulator.service.ScheduleJobService;
-import com.rbkmoney.schedulator.util.SchedulerUtilTest;
 import org.apache.thrift.TException;
 import org.junit.Assert;
 import org.junit.Before;
@@ -24,9 +24,12 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.remoting.RemoteAccessException;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,25 +40,27 @@ import static org.mockito.Mockito.*;
 @SpringBootTest
 public class MgProcessorHandlerTest {
 
+    private static final String NEXT_FIRE_TIME = "31542524";
+
     @MockBean
     private DominantService dominantServiceMock;
 
     @MockBean
     private RemoteClientManager remoteClientManagerMock;
 
-    @MockBean
+    @SpyBean
     private ScheduleJobService scheduleJobService;
 
     @Autowired
-    private ProcessorSrv.Iface mqProcessorHandler;
+    private ProcessorSrv.Iface mgProcessorHandler;
 
     @Before
     public void setUp() throws Exception {
         ScheduledJobContext scheduledJobContext = new ScheduledJobContext()
                 .setNextCronTime("testCron")
-                .setNextFireTime("31542524")
+                .setNextFireTime(NEXT_FIRE_TIME)
                 .setPrevFireTime("215426536");
-        when(scheduleJobService.getScheduledJobContext(any(ScheduleJobRegistered.class))).thenReturn(scheduledJobContext);
+        doReturn(scheduledJobContext).when(scheduleJobService).calculateScheduledJobContext(any(ScheduleJobRegistered.class));
 
         ScheduledJobExecutorSrv.Iface jobExecutorMock = mock(ScheduledJobExecutorSrv.Iface.class);
         ContextValidationResponse validationResponse = new ContextValidationResponse();
@@ -78,7 +83,7 @@ public class MgProcessorHandlerTest {
     @Test
     public void processSignalInitTest() throws TException {
         SignalArgs signalInit = buildSignalInit();
-        SignalResult signalResult = mqProcessorHandler.processSignal(signalInit);
+        SignalResult signalResult = mgProcessorHandler.processSignal(signalInit);
 
         Assert.assertEquals("Machine events should be equal to '2'", 2, signalResult.getChange().getEvents().size());
         Assert.assertTrue("Machine action should be 'timerAction'", signalResult.getAction().isSetTimer());
@@ -87,7 +92,7 @@ public class MgProcessorHandlerTest {
     @Test
     public void processSignalTimeoutRegisterTest() throws TException {
         SignalArgs signalTimeoutRegister = buildSignalTimeoutRegister();
-        SignalResult signalResult = mqProcessorHandler.processSignal(signalTimeoutRegister);
+        SignalResult signalResult = mgProcessorHandler.processSignal(signalTimeoutRegister);
 
         Assert.assertEquals("Machine events should be equal to '1'", 1, signalResult.getChange().getEvents().size());
         Assert.assertTrue("Machine action should be 'timerAction'", signalResult.getAction().isSetTimer());
@@ -96,7 +101,7 @@ public class MgProcessorHandlerTest {
     @Test
     public void processSignalTimeoutDeregisterTest() throws TException {
         SignalArgs signalTimeout = buildSignalTimeoutDeregister();
-        SignalResult signalResult = mqProcessorHandler.processSignal(signalTimeout);
+        SignalResult signalResult = mgProcessorHandler.processSignal(signalTimeout);
 
         Assert.assertEquals("Machine events should be equal to '1'", 1, signalResult.getChange().getEvents().size());
         Assert.assertTrue("Machine action should be 'removeAction'", signalResult.getAction().isSetRemove());
@@ -105,7 +110,69 @@ public class MgProcessorHandlerTest {
     @Test(expected = NotFoundException.class)
     public void procesSignalNoRegisterEventTest() throws TException {
         SignalArgs signalTimeoutValidated = buildSignalTimeoutValidated();
-        SignalResult signalResult = mqProcessorHandler.processSignal(signalTimeoutValidated);
+        SignalResult signalResult = mgProcessorHandler.processSignal(signalTimeoutValidated);
+    }
+
+    @Test
+    public void fixedRetryMachineTest() throws TException {
+        when(remoteClientManagerMock.getRemoteClient(anyString())).thenThrow(RemoteAccessException.class);
+
+        SignalArgs firstSignalTimeoutRegister = buildSignalTimeoutRegister();
+        SignalResult firstSignalResult = mgProcessorHandler.processSignal(firstSignalTimeoutRegister);
+
+        Assert.assertTrue("Machine action should be 'timerAction'", firstSignalResult.getAction().isSetTimer());
+        Timer firstSignalResultTimer = firstSignalResult.getAction().getTimer().getSetTimer().getTimer();
+
+        SignalArgs secondSignalTimeoutRegister = buildSignalTimeoutRegister();
+        secondSignalTimeoutRegister.getMachine().setTimer(firstSignalResultTimer.getDeadline());
+
+        SignalResult secondSignalResult = mgProcessorHandler.processSignal(secondSignalTimeoutRegister);
+        Assert.assertTrue("Machine action should be 'timerAction'", firstSignalResult.getAction().isSetTimer());
+        Timer secondSignalResultTimer = secondSignalResult.getAction().getTimer().getSetTimer().getTimer();
+
+        SignalArgs thirdSignalTimeoutRegister = buildSignalTimeoutRegister();
+        thirdSignalTimeoutRegister.getMachine().setTimer(secondSignalResultTimer.getDeadline());
+
+        SignalResult thirdSignalResult = mgProcessorHandler.processSignal(thirdSignalTimeoutRegister);
+        Assert.assertTrue("Machine action should be 'timerAction'", thirdSignalResult.getAction().isSetTimer());
+        Timer thirdSignalResultTimer = thirdSignalResult.getAction().getTimer().getSetTimer().getTimer();
+
+        Instant firstSignalInstant = TypeUtil.stringToInstant(firstSignalResultTimer.getDeadline());
+        Instant secondSignalInstant = TypeUtil.stringToInstant(secondSignalResultTimer.getDeadline());
+        Instant thirdSignalInstant = TypeUtil.stringToInstant(thirdSignalResultTimer.getDeadline());
+
+        long firstDuration = Duration.between(firstSignalInstant, secondSignalInstant).getSeconds();
+        long secondDuration = Duration.between(secondSignalInstant, thirdSignalInstant).getSeconds();
+
+        Assert.assertEquals("Duration between signal should be equals", firstDuration, secondDuration);
+    }
+
+    @Test
+    public void revertToNormalScheduleTest() throws TException {
+        ScheduledJobExecutorSrv.Iface jobExecutorMock = mock(ScheduledJobExecutorSrv.Iface.class);
+        ContextValidationResponse validationResponse = new ContextValidationResponse();
+        ValidationResponseStatus validationResponseStatus = new ValidationResponseStatus();
+        validationResponseStatus.setSuccess(new ValidationSuccess());
+        validationResponse.setResponseStatus(validationResponseStatus);
+        when(jobExecutorMock.validateExecutionContext(any(ByteBuffer.class))).thenReturn(validationResponse);
+        when(jobExecutorMock.executeJob(any(ExecuteJobRequest.class))).thenReturn(ByteBuffer.wrap(new byte[0]));
+
+        when(remoteClientManagerMock.getRemoteClient(anyString()))
+                .thenThrow(RemoteAccessException.class)
+                .thenReturn(jobExecutorMock);
+
+        SignalArgs firstSignalTimeoutRegister = buildSignalTimeoutRegister();
+        SignalResult firstSignalResult = mgProcessorHandler.processSignal(firstSignalTimeoutRegister);
+
+        Assert.assertTrue("Machine action should be 'timerAction'", firstSignalResult.getAction().isSetTimer());
+
+        SignalArgs secondSignalTimeoutRegister = buildSignalTimeoutRegister();
+        SignalResult secondSignalResult = mgProcessorHandler.processSignal(secondSignalTimeoutRegister);
+
+        Assert.assertTrue("Machine action should be 'timerAction'", firstSignalResult.getAction().isSetTimer());
+
+        String deadline = secondSignalResult.getAction().getTimer().getSetTimer().getTimer().getDeadline();
+        Assert.assertEquals("NextFire time should't be from retry calculator", NEXT_FIRE_TIME, deadline);
     }
 
     private SignalArgs buildSignalTimeoutRegister() {
@@ -166,10 +233,10 @@ public class MgProcessorHandlerTest {
                 .setSignal(Signal.timeout(new TimeoutSignal()))
                 .setMachine(
                         new Machine()
-                            .setId("schedule_id_test")
-                            .setNs("schedulator")
-                            .setHistory(List.of(registerEvent, deregisterEvent))
-                            .setHistoryRange(new HistoryRange())
+                                .setId("schedule_id_test")
+                                .setNs("schedulator")
+                                .setHistory(List.of(registerEvent, deregisterEvent))
+                                .setHistoryRange(new HistoryRange())
                 );
     }
 
@@ -182,10 +249,10 @@ public class MgProcessorHandlerTest {
                 .setSignal(Signal.init(new InitSignal(Value.bin(Geck.toMsgPack(scheduleChange)))))
                 .setMachine(
                         new Machine()
-                            .setId("schedule_id_test")
-                            .setNs("schedulator")
-                            .setHistory(new ArrayList<>())
-                            .setHistoryRange(new HistoryRange())
+                                .setId("schedule_id_test")
+                                .setNs("schedulator")
+                                .setHistory(new ArrayList<>())
+                                .setHistoryRange(new HistoryRange())
                 );
     }
 

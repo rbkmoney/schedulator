@@ -13,7 +13,7 @@ import java.util.Collections;
 @Configuration
 public class RetryConfig {
 
-    @Value("${retry-policy.maxAttempts}")
+    @Value("${retry-policy.dominant.maxAttempts}")
     int maxAttempts;
 
     @Bean

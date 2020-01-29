@@ -3,12 +3,12 @@ package com.rbkmoney.schedulator.handler;
 import com.rbkmoney.damsel.schedule.*;
 import com.rbkmoney.machinarium.domain.CallResultData;
 import com.rbkmoney.machinarium.domain.SignalResultData;
+import com.rbkmoney.machinarium.domain.TMachine;
 import com.rbkmoney.machinarium.domain.TMachineEvent;
 import com.rbkmoney.machinarium.handler.AbstractProcessorHandler;
 import com.rbkmoney.machinegun.msgpack.Nil;
 import com.rbkmoney.machinegun.msgpack.Value;
 import com.rbkmoney.machinegun.stateproc.ComplexAction;
-import com.rbkmoney.machinegun.stateproc.Content;
 import com.rbkmoney.machinegun.stateproc.TimerAction;
 import com.rbkmoney.machinegun.stateproc.UnsetTimerAction;
 import com.rbkmoney.schedulator.exception.NotFoundException;
@@ -46,11 +46,8 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
     }
 
     @Override
-    public final SignalResultData<ScheduleChange> processSignalInit(String namespace,
-                                                              String machineId,
-                                                              Content machineState,
-                                                              ScheduleChange scheduleChangeRegistered) {
-        log.info("Request processSignalInit() machineId: {} scheduleChangeRegistered: {}", machineId, scheduleChangeRegistered);
+    public final SignalResultData<ScheduleChange> processSignalInit(TMachine machine, ScheduleChange scheduleChangeRegistered) {
+        log.info("Request processSignalInit() machineId: {} scheduleChangeRegistered: {}", machine.getMachineId(), scheduleChangeRegistered);
         ScheduleJobRegistered scheduleJobRegistered = scheduleChangeRegistered.getScheduleJobRegistered();
 
         // Validate execution context (call remote service)
@@ -58,7 +55,7 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
 
         // Calculate next execution time
         ScheduleChange scheduleChangeValidated = ScheduleChange.schedule_context_validated(scheduleContextValidated);
-        ScheduledJobContext scheduledJobContext = scheduleJobService.getScheduledJobContext(scheduleJobRegistered);
+        ScheduledJobContext scheduledJobContext = scheduleJobService.calculateScheduledJobContext(scheduleJobRegistered);
         ComplexAction complexAction = TimerActionHelper.buildTimerAction(scheduledJobContext.getNextFireTime());
         log.info("Timer action: {}", complexAction);
         SignalResultData<ScheduleChange> signalResultData = new SignalResultData<>(
@@ -71,11 +68,9 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
     }
 
     @Override
-    public final SignalResultData<ScheduleChange> processSignalTimeout(String namespace,
-                                                                    String machineId,
-                                                                    Content machineState,
-                                                                    List<TMachineEvent<ScheduleChange>> machineEventList) {
-        log.info("Request processSignalTimeout() machineId: {} machineEventList: {}", machineId, machineEventList);
+    public final SignalResultData<ScheduleChange> processSignalTimeout(TMachine<ScheduleChange> machine,
+                                                                       List<TMachineEvent<ScheduleChange>> machineEventList) {
+        log.info("Request processSignalTimeout() machineId: {} machineEventList: {}", machine.getMachineId(), machineEventList);
 
         // Search deregister event
         Optional<TMachineEvent<ScheduleChange>> scheduleJobDeregisteredEventOptional = machineEventList.stream()
@@ -84,26 +79,26 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
 
         // Handle deregister event
         if (scheduleJobDeregisteredEventOptional.isPresent()) {
-            log.info("Process job deregister event for machineId: {}", machineId);
-            return processEvent(machineId, scheduleJobDeregisteredEventOptional.get());
+            log.info("Process job deregister event for machineId: {}", machine.getMachineId());
+            return processEvent(machine, scheduleJobDeregisteredEventOptional.get());
         }
 
         // Search register event
         TMachineEvent<ScheduleChange> scheduleJobRegisteredEvent = machineEventList.stream()
                 .filter(machineEvent -> machineEvent.getData().isSetScheduleJobRegistered())
                 .findFirst()
-                .orElseThrow(() -> new NotFoundException("Couldn't found ScheduleJobRegistered for machineId = " + machineId));
+                .orElseThrow(() -> new NotFoundException("Couldn't found ScheduleJobRegistered for machineId = " + machine.getMachineId()));
 
         // Handle register event
-        log.info("Process job register event for machineId: {}", machineId);
-        return processEvent(machineId, scheduleJobRegisteredEvent);
+        log.info("Process job register event (time calculation) for machineId: {}", machine.getMachineId());
+        return processEvent(machine, scheduleJobRegisteredEvent);
     }
 
     @Override
     public final CallResultData<ScheduleChange> processCall(String namespace,
-                                                         String machineId,
-                                                         ScheduleChange scheduleChange,
-                                                         List<TMachineEvent<ScheduleChange>> machineEvents) {
+                                                            String machineId,
+                                                            ScheduleChange scheduleChange,
+                                                            List<TMachineEvent<ScheduleChange>> machineEvents) {
         log.info("Request processCall() machineId: {} scheduleChange: {} machineEvents: {}", machineId, scheduleChange, machineEvents);
         ComplexAction complexAction = new ComplexAction();
         TimerAction timer = new TimerAction();
@@ -135,11 +130,11 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
         }
     }
 
-    private SignalResultData<ScheduleChange> processEvent(String machineId, TMachineEvent<ScheduleChange> event) {
+    private SignalResultData<ScheduleChange> processEvent(TMachine<ScheduleChange> machine, TMachineEvent<ScheduleChange> event) {
         try {
-            return scheduleCalculatorMachineEventHandler.handle(event);
+            return scheduleCalculatorMachineEventHandler.handle(machine, event);
         } catch (MachineEventHandleException e) {
-            log.error("Exception while handle event for machineId = {}", machineId, e);
+            log.error("Exception while handle event for machineId = {}", machine, e);
             throw new WUndefinedResultException(e);
         }
     }

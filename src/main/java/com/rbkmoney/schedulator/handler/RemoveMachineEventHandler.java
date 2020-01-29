@@ -3,6 +3,7 @@ package com.rbkmoney.schedulator.handler;
 import com.rbkmoney.damsel.schedule.ScheduleChange;
 import com.rbkmoney.damsel.schedule.ScheduleJobDeregistered;
 import com.rbkmoney.machinarium.domain.SignalResultData;
+import com.rbkmoney.machinarium.domain.TMachine;
 import com.rbkmoney.machinarium.domain.TMachineEvent;
 import com.rbkmoney.machinegun.msgpack.Nil;
 import com.rbkmoney.machinegun.msgpack.Value;
@@ -20,7 +21,7 @@ public class RemoveMachineEventHandler extends BaseMachineEventHandler<ScheduleC
     }
 
     @Override
-    protected SignalResultData<ScheduleChange> handleEvent(TMachineEvent<ScheduleChange> machineEvent) {
+    protected SignalResultData<ScheduleChange> handleEvent(TMachine<ScheduleChange> machine, TMachineEvent<ScheduleChange> machineEvent) {
         log.info("Handle remove schedule machine event");
         ComplexAction removeAction = TimerActionHelper.buildRemoveAction();
 

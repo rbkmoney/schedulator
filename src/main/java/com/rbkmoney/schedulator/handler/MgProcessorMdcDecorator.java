@@ -4,9 +4,9 @@ import com.rbkmoney.damsel.schedule.ScheduleChange;
 import com.rbkmoney.damsel.schedule.ScheduleJobRegistered;
 import com.rbkmoney.machinarium.domain.CallResultData;
 import com.rbkmoney.machinarium.domain.SignalResultData;
+import com.rbkmoney.machinarium.domain.TMachine;
 import com.rbkmoney.machinarium.domain.TMachineEvent;
 import com.rbkmoney.machinarium.handler.AbstractProcessorHandler;
-import com.rbkmoney.machinegun.stateproc.Content;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 
@@ -26,24 +26,19 @@ public class MgProcessorMdcDecorator extends AbstractProcessorHandler<ScheduleCh
     }
 
     @Override
-    protected SignalResultData<ScheduleChange> processSignalInit(String namespace,
-                                                                 String machineId,
-                                                                 Content machineState,
-                                                                 ScheduleChange args) {
+    protected SignalResultData<ScheduleChange> processSignalInit(TMachine<ScheduleChange> machine, ScheduleChange args) {
         try {
             if (args.isSetScheduleJobRegistered()) {
                 MDC.put(MACHINE_ID, args.getScheduleJobRegistered().getScheduleId());
             }
-            return mgProcessorHandler.processSignalInit(namespace, machineId, machineState, args);
+            return mgProcessorHandler.processSignalInit(machine, args);
         } finally {
             MDC.clear();
         }
     }
 
     @Override
-    protected SignalResultData<ScheduleChange> processSignalTimeout(String namespace,
-                                                                    String machineId,
-                                                                    Content machineState,
+    protected SignalResultData<ScheduleChange> processSignalTimeout(TMachine<ScheduleChange> machine,
                                                                     List<TMachineEvent<ScheduleChange>> machineEvents) {
         try {
             Optional<TMachineEvent<ScheduleChange>> scheduleJobRegisteredEvent = machineEvents.stream()
@@ -53,10 +48,11 @@ public class MgProcessorMdcDecorator extends AbstractProcessorHandler<ScheduleCh
                 ScheduleJobRegistered scheduleJobRegistered = scheduleJobRegisteredEvent.get().getData().getScheduleJobRegistered();
                 MDC.put(MACHINE_ID, scheduleJobRegistered.getScheduleId());
             }
-            return mgProcessorHandler.processSignalTimeout(namespace, machineId, machineState, machineEvents);
+            return mgProcessorHandler.processSignalTimeout(machine, machineEvents);
         } finally {
             MDC.clear();
         }
+
     }
 
     @Override
