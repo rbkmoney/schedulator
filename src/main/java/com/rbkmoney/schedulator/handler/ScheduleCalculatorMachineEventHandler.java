@@ -1,7 +1,6 @@
 package com.rbkmoney.schedulator.handler;
 
 import com.rbkmoney.damsel.schedule.*;
-import com.rbkmoney.geck.common.util.TypeUtil;
 import com.rbkmoney.machinarium.domain.SignalResultData;
 import com.rbkmoney.machinarium.domain.TMachine;
 import com.rbkmoney.machinarium.domain.TMachineEvent;
@@ -12,12 +11,9 @@ import com.rbkmoney.schedulator.service.ScheduleJobService;
 import com.rbkmoney.schedulator.util.TimerActionHelper;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.thrift.TException;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import java.nio.ByteBuffer;
-import java.time.Instant;
 import java.util.Collections;
 
 @Slf4j
