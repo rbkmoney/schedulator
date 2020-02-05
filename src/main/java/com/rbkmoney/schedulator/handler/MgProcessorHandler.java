@@ -68,6 +68,7 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
 
             return signalResultData;
         } catch (ScheduleJobCalculateException e) {
+            log.error("Failed to calculate schedule", e);
             throw new WUndefinedResultException("Failed to calculate schedule", e);
         }
     }
@@ -149,6 +150,7 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
         try {
             return client.validateExecutionContext(context);
         } catch (Exception e) {
+            log.error("Call remote client failed", e);
             throw new WUnavailableResultException(e);
         }
     }
