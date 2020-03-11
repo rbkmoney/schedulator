@@ -11,7 +11,7 @@ import java.util.List;
 
 public class DefaultMachineEventChain implements MachineEventChain {
 
-    private Iterator<MachineEventHandler> iterator;
+    private final Iterator<MachineEventHandler> iterator;
 
     public DefaultMachineEventChain(List<MachineEventHandler> machineEventHandlers) {
         this.iterator = machineEventHandlers.iterator();
