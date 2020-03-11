@@ -36,9 +36,9 @@ public class JobRegisteredMachineEventHandler implements MachineEventHandler {
     @Override
     public SignalResultData<ScheduleChange> handleEvent(TMachine<ScheduleChange> machine,
                                                         TMachineEvent<ScheduleChange> event,
-                                                        DefaultMachineEventChain filterChain) {
+                                                        DefaultMachineEventChain chain) {
         if (!event.getData().isSetScheduleJobRegistered()) {
-            return filterChain.processEventChain(machine, event);
+            return chain.processEventChain(machine, event);
         }
 
         log.info("Process job register event (time calculation) for machineId: {}", machine.getMachineId());
@@ -61,7 +61,7 @@ public class JobRegisteredMachineEventHandler implements MachineEventHandler {
 
             log.info("[ScheduleCalculator] timer action: {}", complexAction);
 
-            SchedulatorMachineState schedulatorMachineState = SchedulatorMachineState.mapToMachineState(scheduleJobRegistered);
+            SchedulatorMachineState schedulatorMachineState = new SchedulatorMachineState(scheduleJobRegistered);
             byte[] state = machineStateSerializer.serialize(schedulatorMachineState);
 
             log.info("Schedulator machine state: {}", schedulatorMachineState);

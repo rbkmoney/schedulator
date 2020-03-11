@@ -8,5 +8,5 @@ import com.rbkmoney.machinarium.domain.TMachineEvent;
 public interface MachineEventHandler {
     SignalResultData<ScheduleChange> handleEvent(TMachine<ScheduleChange> machine,
                                                  TMachineEvent<ScheduleChange> event,
-                                                 DefaultMachineEventChain filterChain);
+                                                 DefaultMachineEventChain chain);
 }

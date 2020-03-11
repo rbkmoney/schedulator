@@ -5,12 +5,10 @@ import com.rbkmoney.machinarium.domain.SignalResultData;
 import com.rbkmoney.machinarium.domain.TMachine;
 import com.rbkmoney.machinarium.domain.TMachineEvent;
 import com.rbkmoney.schedulator.handler.machinegun.MachineEventHandleException;
-import org.springframework.stereotype.Component;
 
 import java.util.Iterator;
 import java.util.List;
 
-@Component
 public class DefaultMachineEventChain implements MachineEventChain {
 
     private Iterator<MachineEventHandler> iterator;

@@ -12,8 +12,7 @@ public class SchedulatorMachineState {
 
     private MachineRegisterState registerState;
 
-    public static SchedulatorMachineState mapToMachineState(ScheduleJobRegistered scheduleJobRegistered) {
-        SchedulatorMachineState schedulatorMachineState = new SchedulatorMachineState();
+    public SchedulatorMachineState(ScheduleJobRegistered scheduleJobRegistered) {
         MachineRegisterState machineRegisterState = new MachineRegisterState();
         machineRegisterState.setContext(new RegisterContext(scheduleJobRegistered.getContext()));
         machineRegisterState.setExecutorServicePath(scheduleJobRegistered.getExecutorServicePath());
@@ -21,9 +20,7 @@ public class SchedulatorMachineState {
         machineRegisterState.setDominantRevisionId(scheduleJobRegistered.getSchedule().getDominantSchedule().getRevision());
         machineRegisterState.setBusinessSchedulerId(scheduleJobRegistered.getSchedule().getDominantSchedule().getBusinessScheduleRef().getId());
         machineRegisterState.setCalendarId(scheduleJobRegistered.getSchedule().getDominantSchedule().getCalendarRef().getId());
-        schedulatorMachineState.setRegisterState(machineRegisterState);
-
-        return schedulatorMachineState;
+        this.registerState = machineRegisterState;
     }
 
 }

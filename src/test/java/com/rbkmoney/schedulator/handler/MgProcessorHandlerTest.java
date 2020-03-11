@@ -183,7 +183,7 @@ public class MgProcessorHandlerTest {
 
         Event registerEvent = signalTimeoutRegister.getMachine().getHistory().get(0);
         ScheduleChange scheduleChange = Geck.msgPackToTBase(registerEvent.getData().getBin(), ScheduleChange.class);
-        SchedulatorMachineState jobRegistered = SchedulatorMachineState.mapToMachineState(scheduleChange.getScheduleJobRegistered());
+        SchedulatorMachineState jobRegistered = new SchedulatorMachineState(scheduleChange.getScheduleJobRegistered());
 
         byte[] state = machineStateSerializer.serialize(jobRegistered);
         signalTimeoutRegister.getMachine().setAuxState(new Content(Value.bin(state)));

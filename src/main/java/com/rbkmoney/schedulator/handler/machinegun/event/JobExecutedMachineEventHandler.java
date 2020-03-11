@@ -1,9 +1,8 @@
 package com.rbkmoney.schedulator.handler.machinegun.event;
 
-import com.rbkmoney.damsel.schedule.ScheduleChange;
-import com.rbkmoney.damsel.schedule.ScheduleJobExecuted;
-import com.rbkmoney.damsel.schedule.ScheduleJobRegistered;
-import com.rbkmoney.damsel.schedule.ScheduledJobContext;
+import com.rbkmoney.damsel.domain.BusinessScheduleRef;
+import com.rbkmoney.damsel.domain.CalendarRef;
+import com.rbkmoney.damsel.schedule.*;
 import com.rbkmoney.machinarium.domain.SignalResultData;
 import com.rbkmoney.machinarium.domain.TMachine;
 import com.rbkmoney.machinarium.domain.TMachineEvent;
@@ -34,9 +33,9 @@ public class JobExecutedMachineEventHandler implements MachineEventHandler {
     @Override
     public SignalResultData<ScheduleChange> handleEvent(TMachine<ScheduleChange> machine,
                                                         TMachineEvent<ScheduleChange> event,
-                                                        DefaultMachineEventChain filterChain) {
+                                                        DefaultMachineEventChain chain) {
         if (!event.getData().isSetScheduleJobExecuted()) {
-            return filterChain.processEventChain(machine, event);
+            return chain.processEventChain(machine, event);
         }
 
         log.info("Process job executed event for machineId: {}", machine.getMachineId());
@@ -48,7 +47,7 @@ public class JobExecutedMachineEventHandler implements MachineEventHandler {
         byte[] state = machine.getMachineState().getData().getBin();
         SchedulatorMachineState schedulatorMachineState = machineStateSerializer.deserializer(state);
         MachineRegisterState registerState = schedulatorMachineState.getRegisterState();
-        ScheduleJobRegistered scheduleJobRegistered = registerState.mapToScheduleJobRegistered();
+        ScheduleJobRegistered scheduleJobRegistered = mapToScheduleJobRegistered(registerState);
 
         // Calculate next execution
         ScheduleJobCalculateResult scheduleJobCalculateResult =
@@ -70,4 +69,18 @@ public class JobExecutedMachineEventHandler implements MachineEventHandler {
 
         return signalResultData;
     }
+
+    private ScheduleJobRegistered mapToScheduleJobRegistered(MachineRegisterState registerState) {
+        DominantBasedSchedule dominantBasedSchedule = new DominantBasedSchedule()
+                .setBusinessScheduleRef(new BusinessScheduleRef(registerState.getBusinessSchedulerId()))
+                .setCalendarRef(new CalendarRef(registerState.getCalendarId()))
+                .setRevision(registerState.getDominantRevisionId());
+        Schedule schedule = Schedule.dominant_schedule(dominantBasedSchedule);
+        return new ScheduleJobRegistered()
+                .setContext(registerState.getContext().getBytes())
+                .setExecutorServicePath(registerState.getExecutorServicePath())
+                .setScheduleId(registerState.getSchedulerId())
+                .setSchedule(schedule);
+    }
+
 }

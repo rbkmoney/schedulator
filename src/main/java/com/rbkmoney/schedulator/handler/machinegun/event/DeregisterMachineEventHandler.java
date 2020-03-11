@@ -20,9 +20,9 @@ public class DeregisterMachineEventHandler implements MachineEventHandler {
     @Override
     public SignalResultData<ScheduleChange> handleEvent(TMachine<ScheduleChange> machine,
                                                         TMachineEvent<ScheduleChange> event,
-                                                        DefaultMachineEventChain filterChain) {
+                                                        DefaultMachineEventChain chain) {
         if (!event.getData().isSetScheduleJobDeregistered()) {
-            return filterChain.processEventChain(machine, event);
+            return chain.processEventChain(machine, event);
         }
         log.info("Process job deregister event for machineId: {}", machine.getMachineId());
         ComplexAction removeAction = TimerActionHelper.buildRemoveAction();
