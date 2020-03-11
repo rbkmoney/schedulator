@@ -32,12 +32,7 @@ public class JobExecutedMachineEventHandler implements MachineEventHandler {
 
     @Override
     public SignalResultData<ScheduleChange> handleEvent(TMachine<ScheduleChange> machine,
-                                                        TMachineEvent<ScheduleChange> event,
-                                                        DefaultMachineEventChain chain) {
-        if (!event.getData().isSetScheduleJobExecuted()) {
-            return chain.processEventChain(machine, event);
-        }
-
+                                                        TMachineEvent<ScheduleChange> event) {
         log.info("Process job executed event for machineId: {}", machine.getMachineId());
         if (machine.getMachineState() == null) {
             throw new IllegalStateException("Machine state can't be null");
@@ -68,6 +63,11 @@ public class JobExecutedMachineEventHandler implements MachineEventHandler {
         log.info("Response of processSignalTimeout: {}", signalResultData);
 
         return signalResultData;
+    }
+
+    @Override
+    public boolean isHandle(TMachine<ScheduleChange> machine, TMachineEvent<ScheduleChange> event) {
+        return event.getData().isSetScheduleJobExecuted();
     }
 
     private ScheduleJobRegistered mapToScheduleJobRegistered(MachineRegisterState registerState) {

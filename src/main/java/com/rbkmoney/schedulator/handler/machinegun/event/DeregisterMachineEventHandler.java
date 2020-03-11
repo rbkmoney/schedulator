@@ -19,16 +19,17 @@ import java.util.List;
 public class DeregisterMachineEventHandler implements MachineEventHandler {
     @Override
     public SignalResultData<ScheduleChange> handleEvent(TMachine<ScheduleChange> machine,
-                                                        TMachineEvent<ScheduleChange> event,
-                                                        DefaultMachineEventChain chain) {
-        if (!event.getData().isSetScheduleJobDeregistered()) {
-            return chain.processEventChain(machine, event);
-        }
+                                                        TMachineEvent<ScheduleChange> event) {
         log.info("Process job deregister event for machineId: {}", machine.getMachineId());
         ComplexAction removeAction = TimerActionHelper.buildRemoveAction();
 
         ScheduleChange scheduleJobDeregistered = ScheduleChange.schedule_job_deregistered(new ScheduleJobDeregistered());
 
         return new SignalResultData<>(Value.nl(new Nil()), List.of(scheduleJobDeregistered), removeAction);
+    }
+
+    @Override
+    public boolean isHandle(TMachine<ScheduleChange> machine, TMachineEvent<ScheduleChange> event) {
+        return event.getData().isSetScheduleJobDeregistered();
     }
 }

@@ -4,6 +4,7 @@ import com.rbkmoney.damsel.schedule.ScheduleChange;
 import com.rbkmoney.machinarium.domain.SignalResultData;
 import com.rbkmoney.machinarium.domain.TMachine;
 import com.rbkmoney.machinarium.domain.TMachineEvent;
+import com.rbkmoney.schedulator.handler.machinegun.MachineEventHandleException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +18,11 @@ public class DefaultMachineEventProcessor implements MachineEventProcessor {
 
     @Override
     public SignalResultData<ScheduleChange> process(TMachine<ScheduleChange> machine, TMachineEvent<ScheduleChange> machineEvent) {
-        DefaultMachineEventChain chain = new DefaultMachineEventChain(machineEventHandlers);
-        return chain.processEventChain(machine, machineEvent);
+        for (MachineEventHandler machineEventHandler : machineEventHandlers) {
+            if (machineEventHandler.isHandle(machine, machineEvent)) {
+                return machineEventHandler.handleEvent(machine, machineEvent);
+            }
+        }
+        throw new MachineEventHandleException(String.format("Empty next event handler. Event '%s'", machine));
     }
 }

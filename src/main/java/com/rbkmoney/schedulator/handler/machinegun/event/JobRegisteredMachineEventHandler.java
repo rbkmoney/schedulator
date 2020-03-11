@@ -35,12 +35,7 @@ public class JobRegisteredMachineEventHandler implements MachineEventHandler {
 
     @Override
     public SignalResultData<ScheduleChange> handleEvent(TMachine<ScheduleChange> machine,
-                                                        TMachineEvent<ScheduleChange> event,
-                                                        DefaultMachineEventChain chain) {
-        if (!event.getData().isSetScheduleJobRegistered()) {
-            return chain.processEventChain(machine, event);
-        }
-
+                                                        TMachineEvent<ScheduleChange> event) {
         log.info("Process job register event (time calculation) for machineId: {}", machine.getMachineId());
         ScheduleJobRegistered scheduleJobRegistered = event.getData().getScheduleJobRegistered();
         try {
@@ -78,6 +73,11 @@ public class JobRegisteredMachineEventHandler implements MachineEventHandler {
                     scheduleJobRegistered.getScheduleId(), scheduleJobRegistered.getExecutorServicePath());
             throw new EventHandlerException(errMsg, e);
         }
+    }
+
+    @Override
+    public boolean isHandle(TMachine<ScheduleChange> machine, TMachineEvent<ScheduleChange> event) {
+        return event.getData().isSetScheduleJobRegistered();
     }
 
 }

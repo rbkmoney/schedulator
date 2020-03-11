@@ -12,7 +12,6 @@ import com.rbkmoney.machinegun.stateproc.ComplexAction;
 import com.rbkmoney.machinegun.stateproc.HistoryRange;
 import com.rbkmoney.machinegun.stateproc.TimerAction;
 import com.rbkmoney.machinegun.stateproc.UnsetTimerAction;
-import com.rbkmoney.schedulator.handler.machinegun.event.DefaultMachineEventChain;
 import com.rbkmoney.schedulator.handler.machinegun.event.MachineEventHandler;
 import com.rbkmoney.schedulator.handler.machinegun.event.MachineEventProcessor;
 import com.rbkmoney.schedulator.service.RemoteClientManager;

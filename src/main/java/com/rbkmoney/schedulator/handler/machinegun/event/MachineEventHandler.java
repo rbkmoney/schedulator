@@ -6,7 +6,7 @@ import com.rbkmoney.machinarium.domain.TMachine;
 import com.rbkmoney.machinarium.domain.TMachineEvent;
 
 public interface MachineEventHandler {
-    SignalResultData<ScheduleChange> handleEvent(TMachine<ScheduleChange> machine,
-                                                 TMachineEvent<ScheduleChange> event,
-                                                 DefaultMachineEventChain chain);
+    SignalResultData<ScheduleChange> handleEvent(TMachine<ScheduleChange> machine, TMachineEvent<ScheduleChange> event);
+
+    boolean isHandle(TMachine<ScheduleChange> machine, TMachineEvent<ScheduleChange> event);
 }
