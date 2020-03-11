@@ -31,6 +31,7 @@
         <machinarium.version>0.2.9</machinarium.version>
         <cronutils.version>9.0.1</cronutils.version>
         <damsel.version>1.336-b563890</damsel.version>
+        <caffeine.version>2.8.1</caffeine.version>
     </properties>
 
     <dependencies>
@@ -102,6 +103,11 @@
             <groupId>com.cronutils</groupId>
             <artifactId>cron-utils</artifactId>
             <version>${cronutils.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>${caffeine.version}</version>
         </dependency>
 
         <!--test-->

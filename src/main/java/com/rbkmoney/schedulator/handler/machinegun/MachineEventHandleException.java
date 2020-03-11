@@ -1,6 +1,6 @@
-package com.rbkmoney.schedulator.handler;
+package com.rbkmoney.schedulator.handler.machinegun;
 
-public class MachineEventHandleException extends Exception {
+public class MachineEventHandleException extends RuntimeException {
 
     public MachineEventHandleException() {
         super();

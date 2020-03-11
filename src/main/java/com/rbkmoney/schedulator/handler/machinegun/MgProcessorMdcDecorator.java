@@ -1,4 +1,4 @@
-package com.rbkmoney.schedulator.handler;
+package com.rbkmoney.schedulator.handler.machinegun;
 
 import com.rbkmoney.damsel.schedule.ScheduleChange;
 import com.rbkmoney.damsel.schedule.ScheduleJobRegistered;

@@ -2,20 +2,22 @@ package com.rbkmoney.schedulator.service.impl;
 
 import com.rbkmoney.damsel.domain.BusinessSchedule;
 import com.rbkmoney.damsel.domain.Calendar;
-import com.rbkmoney.damsel.schedule.DominantBasedSchedule;
-import com.rbkmoney.damsel.schedule.ScheduleJobRegistered;
-import com.rbkmoney.damsel.schedule.ScheduledJobContext;
+import com.rbkmoney.damsel.schedule.*;
 import com.rbkmoney.geck.common.util.TypeUtil;
+import com.rbkmoney.machinarium.domain.TMachine;
 import com.rbkmoney.schedulator.cron.SchedulerCalculator;
 import com.rbkmoney.schedulator.cron.SchedulerComputeResult;
 import com.rbkmoney.schedulator.exception.NotFoundException;
 import com.rbkmoney.schedulator.service.DominantService;
+import com.rbkmoney.schedulator.service.RemoteClientManager;
 import com.rbkmoney.schedulator.service.ScheduleJobService;
+import com.rbkmoney.schedulator.service.model.ScheduleJobCalculateResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.nio.ByteBuffer;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -26,10 +28,32 @@ import java.util.TimeZone;
 @RequiredArgsConstructor
 public class ScheduleJobServiceImpl implements ScheduleJobService {
 
+    private final RemoteClientManager remoteClientManager;
+
+    private final DominantService dominantService;
+
     @Value("${retry-policy.job.intervalSeconds:30}")
     private int retryInterval;
 
-    private final DominantService dominantService;
+    public ScheduleJobCalculateResult calculateNextExecutionTime(TMachine<ScheduleChange> machine,
+                                                                 ScheduleJobRegistered scheduleJobRegistered) {
+        // Calculate execution time
+        ExecuteJobRequest executeJobRequest = new ExecuteJobRequest();
+        ScheduledJobContext scheduledJobContext = calculateScheduledJobContext(scheduleJobRegistered);
+        executeJobRequest.setScheduledJobContext(scheduledJobContext);
+        executeJobRequest.setServiceExecutionContext(scheduleJobRegistered.getContext());
+
+        String url = scheduleJobRegistered.getExecutorServicePath();
+        ByteBuffer remoteJobContext = callRemoteJob(url, executeJobRequest);
+
+        // Calculate retry execution time
+        if (remoteJobContext == null) {
+            remoteJobContext = ByteBuffer.wrap(scheduleJobRegistered.getContext()); // Set old execution context
+            scheduledJobContext = calculateRetryJobContext(scheduleJobRegistered, machine.getTimer());
+        }
+
+        return new ScheduleJobCalculateResult(executeJobRequest, scheduledJobContext, remoteJobContext);
+    }
 
     @Override
     public ScheduledJobContext calculateScheduledJobContext(ScheduleJobRegistered scheduleJobRegistered) {
@@ -76,6 +100,16 @@ public class ScheduleJobServiceImpl implements ScheduleJobService {
         } catch (Exception e) {
             throw new ScheduleJobCalculateException(
                     String.format("Exception while calculate schedule for: %s", scheduleJobRegistered), e);
+        }
+    }
+
+    private ByteBuffer callRemoteJob(String url, ExecuteJobRequest executeJobRequest) {
+        try {
+            ScheduledJobExecutorSrv.Iface remoteClient = remoteClientManager.getRemoteClient(url);
+            return remoteClient.executeJob(executeJobRequest);
+        } catch (Exception e) {
+            log.error("Call '{}' job failed. Set old remoteJobContext variable", url, e);
+            return null;
         }
     }
 

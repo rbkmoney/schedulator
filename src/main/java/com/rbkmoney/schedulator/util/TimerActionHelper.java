@@ -1,21 +1,19 @@
 package com.rbkmoney.schedulator.util;
 
 import com.rbkmoney.machinegun.base.Timer;
-import com.rbkmoney.machinegun.stateproc.ComplexAction;
-import com.rbkmoney.machinegun.stateproc.RemoveAction;
-import com.rbkmoney.machinegun.stateproc.SetTimerAction;
-import com.rbkmoney.machinegun.stateproc.TimerAction;
+import com.rbkmoney.machinegun.stateproc.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class TimerActionHelper {
 
-    public static ComplexAction buildTimerAction(String deadline) {
+    public static ComplexAction buildTimerAction(String deadline, HistoryRange historyRange) {
         ComplexAction complexAction = new ComplexAction();
         TimerAction timer = new TimerAction();
         SetTimerAction setTimerAction = new SetTimerAction();
         setTimerAction.setTimer(Timer.deadline(deadline));
+        setTimerAction.setRange(historyRange);
         timer.setSetTimer(setTimerAction);
         complexAction.setTimer(timer);
         return complexAction;
@@ -27,6 +25,13 @@ public class TimerActionHelper {
         complexAction.setRemove(removeAction);
 
         return complexAction;
+    }
+
+    public static HistoryRange buildLastEventHistoryRange() {
+        HistoryRange historyRange = new HistoryRange();
+        historyRange.setDirection(Direction.backward);
+        historyRange.setLimit(1);
+        return historyRange;
     }
 
 }

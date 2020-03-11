@@ -14,7 +14,10 @@ import com.rbkmoney.machinegun.msgpack.Value;
 import com.rbkmoney.machinegun.stateproc.*;
 import com.rbkmoney.schedulator.ScheduleTestData;
 import com.rbkmoney.schedulator.exception.NotFoundException;
+import com.rbkmoney.schedulator.serializer.MachineStateSerializer;
+import com.rbkmoney.schedulator.serializer.SchedulatorMachineState;
 import com.rbkmoney.schedulator.service.DominantService;
+import com.rbkmoney.schedulator.service.RemoteClientManager;
 import com.rbkmoney.schedulator.service.ScheduleJobService;
 import org.apache.thrift.TException;
 import org.junit.Assert;
@@ -52,6 +55,9 @@ public class MgProcessorHandlerTest {
     private ScheduleJobService scheduleJobService;
 
     @Autowired
+    private MachineStateSerializer machineStateSerializer;
+
+    @Autowired
     private ProcessorSrv.Iface mgProcessorHandler;
 
     @Before
@@ -70,6 +76,7 @@ public class MgProcessorHandlerTest {
         when(jobExecutorMock.validateExecutionContext(any(ByteBuffer.class))).thenReturn(validationResponse);
         when(jobExecutorMock.executeJob(any(ExecuteJobRequest.class))).thenReturn(ByteBuffer.wrap(new byte[0]));
         when(remoteClientManagerMock.getRemoteClient(anyString())).thenReturn(jobExecutorMock);
+        when(remoteClientManagerMock.validateExecutionContext(anyString(), any(ByteBuffer.class))).thenReturn(validationResponse);
 
         BusinessSchedule schedule = ScheduleTestData.buildSchedule(2018, Month.Apr, (byte) 4, DayOfWeek.Fri, (byte) 7, null, null);
 
@@ -96,6 +103,7 @@ public class MgProcessorHandlerTest {
 
         Assert.assertEquals("Machine events should be equal to '1'", 1, signalResult.getChange().getEvents().size());
         Assert.assertTrue("Machine action should be 'timerAction'", signalResult.getAction().isSetTimer());
+        Assert.assertEquals("Range limit should be '1'", 1, signalResult.getAction().getTimer().getSetTimer().getRange().getLimit());
     }
 
     @Test
@@ -105,12 +113,6 @@ public class MgProcessorHandlerTest {
 
         Assert.assertEquals("Machine events should be equal to '1'", 1, signalResult.getChange().getEvents().size());
         Assert.assertTrue("Machine action should be 'removeAction'", signalResult.getAction().isSetRemove());
-    }
-
-    @Test(expected = NotFoundException.class)
-    public void procesSignalNoRegisterEventTest() throws TException {
-        SignalArgs signalTimeoutValidated = buildSignalTimeoutValidated();
-        SignalResult signalResult = mgProcessorHandler.processSignal(signalTimeoutValidated);
     }
 
     @Test
@@ -175,6 +177,32 @@ public class MgProcessorHandlerTest {
         Assert.assertEquals("NextFire time should't be from retry calculator", NEXT_FIRE_TIME, deadline);
     }
 
+    @Test
+    public void eventSerializeTest() throws TException {
+        SignalArgs signalTimeoutRegister = buildSignalTimeoutRegister();
+
+        Event registerEvent = signalTimeoutRegister.getMachine().getHistory().get(0);
+        ScheduleChange scheduleChange = Geck.msgPackToTBase(registerEvent.getData().getBin(), ScheduleChange.class);
+        SchedulatorMachineState jobRegistered = SchedulatorMachineState.mapToMachineState(scheduleChange.getScheduleJobRegistered());
+
+        byte[] state = machineStateSerializer.serialize(jobRegistered);
+        signalTimeoutRegister.getMachine().setAuxState(new Content(Value.bin(state)));
+        SignalResult signalResult = mgProcessorHandler.processSignal(signalTimeoutRegister);
+
+        SchedulatorMachineState machineState = machineStateSerializer.deserializer(signalResult.getChange().getAuxState().getData().getBin());
+
+        Assert.assertEquals(scheduleChange.getScheduleJobRegistered().getExecutorServicePath(),
+                machineState.getRegisterState().getExecutorServicePath());
+        Assert.assertEquals(scheduleChange.getScheduleJobRegistered().getSchedule().getDominantSchedule().getRevision(),
+                (long) machineState.getRegisterState().getDominantRevisionId());
+        Assert.assertEquals(scheduleChange.getScheduleJobRegistered().getSchedule().getDominantSchedule().getCalendarRef().getId(),
+                (long) machineState.getRegisterState().getCalendarId());
+        Assert.assertEquals(scheduleChange.getScheduleJobRegistered().getSchedule().getDominantSchedule().getBusinessScheduleRef().getId(),
+                (int) machineState.getRegisterState().getBusinessSchedulerId());
+        Assert.assertEquals(new String(scheduleChange.getScheduleJobRegistered().getContext()),
+                new String(machineState.getRegisterState().getContext().getBytes()));
+    }
+
     private SignalArgs buildSignalTimeoutRegister() {
         ScheduleJobRegistered scheduleJobRegistered = buildScheduleJobRegister();
         ScheduleChange registerScheduleChange = ScheduleChange.schedule_job_registered(scheduleJobRegistered);
@@ -192,38 +220,8 @@ public class MgProcessorHandlerTest {
                 );
     }
 
-    private SignalArgs buildSignalTimeoutValidated() {
-        Schedule businessSchedule = buildBusinessSchedule();
-
-        ScheduleContextValidated scheduleContextValidated = new ScheduleContextValidated();
-        ContextValidationResponse contextValidationResponse = new ContextValidationResponse();
-        ValidationResponseStatus validationResponseStatus = new ValidationResponseStatus();
-        validationResponseStatus.setSuccess(new ValidationSuccess());
-        contextValidationResponse.setResponseStatus(validationResponseStatus);
-        scheduleContextValidated.setResponse(contextValidationResponse);
-        scheduleContextValidated.setRequest(new byte[0]);
-
-        ScheduleChange ctxValidatedScheduleChange = ScheduleChange.schedule_context_validated(scheduleContextValidated);
-
-        Event ctxValidatedEvent = new Event(1L, Instant.now().toString(), Value.bin(Geck.toMsgPack(ctxValidatedScheduleChange)));
-
-        return new SignalArgs()
-                .setSignal(Signal.timeout(new TimeoutSignal()))
-                .setMachine(
-                        new Machine()
-                                .setId("schedule_id_test")
-                                .setNs("schedulator")
-                                .setHistory(List.of(ctxValidatedEvent))
-                                .setHistoryRange(new HistoryRange())
-                );
-    }
-
     private SignalArgs buildSignalTimeoutDeregister() {
         Schedule businessSchedule = buildBusinessSchedule();
-
-        ScheduleChange scheduleJobRegister = ScheduleChange.schedule_job_registered(buildScheduleJobRegister());
-
-        Event registerEvent = new Event(1L, Instant.now().toString(), Value.bin(Geck.toMsgPack(scheduleJobRegister)));
 
         ScheduleChange scheduleChangeDeregister = ScheduleChange.schedule_job_deregistered(new ScheduleJobDeregistered());
 
@@ -235,7 +233,7 @@ public class MgProcessorHandlerTest {
                         new Machine()
                                 .setId("schedule_id_test")
                                 .setNs("schedulator")
-                                .setHistory(List.of(registerEvent, deregisterEvent))
+                                .setHistory(List.of(deregisterEvent))
                                 .setHistoryRange(new HistoryRange())
                 );
     }
@@ -262,7 +260,7 @@ public class MgProcessorHandlerTest {
         return new ScheduleJobRegistered()
                 .setScheduleId("testScheduleId")
                 .setSchedule(buildBusinessSchedule)
-                .setContext(new byte[0])
+                .setContext("testContext".getBytes())
                 .setExecutorServicePath("executorServicePathTest");
     }
 

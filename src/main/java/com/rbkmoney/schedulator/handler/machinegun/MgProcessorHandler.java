@@ -1,4 +1,4 @@
-package com.rbkmoney.schedulator.handler;
+package com.rbkmoney.schedulator.handler.machinegun;
 
 import com.rbkmoney.damsel.schedule.*;
 import com.rbkmoney.machinarium.domain.CallResultData;
@@ -9,9 +9,13 @@ import com.rbkmoney.machinarium.handler.AbstractProcessorHandler;
 import com.rbkmoney.machinegun.msgpack.Nil;
 import com.rbkmoney.machinegun.msgpack.Value;
 import com.rbkmoney.machinegun.stateproc.ComplexAction;
+import com.rbkmoney.machinegun.stateproc.HistoryRange;
 import com.rbkmoney.machinegun.stateproc.TimerAction;
 import com.rbkmoney.machinegun.stateproc.UnsetTimerAction;
-import com.rbkmoney.schedulator.exception.NotFoundException;
+import com.rbkmoney.schedulator.handler.machinegun.event.DefaultMachineEventChain;
+import com.rbkmoney.schedulator.handler.machinegun.event.MachineEventHandler;
+import com.rbkmoney.schedulator.handler.machinegun.event.MachineEventProcessor;
+import com.rbkmoney.schedulator.service.RemoteClientManager;
 import com.rbkmoney.schedulator.service.ScheduleJobService;
 import com.rbkmoney.schedulator.service.impl.ScheduleJobCalculateException;
 import com.rbkmoney.schedulator.util.TimerActionHelper;
@@ -25,7 +29,6 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Component
@@ -35,15 +38,19 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
 
     private final ScheduleJobService scheduleJobService;
 
-    private final ScheduleCalculatorMachineEventHandler scheduleCalculatorMachineEventHandler;
+    private final List<MachineEventHandler> machineEventHandlers;
+
+    private final MachineEventProcessor machineEventProcessor;
 
     public MgProcessorHandler(RemoteClientManager remoteClientManager,
                               ScheduleJobService scheduleJobService,
-                              ScheduleCalculatorMachineEventHandler scheduleCalculatorMachineEventHandler) {
+                              List<MachineEventHandler> machineEventHandlers,
+                              MachineEventProcessor machineEventProcessor) {
         super(ScheduleChange.class, ScheduleChange.class);
         this.remoteClientManager = remoteClientManager;
         this.scheduleJobService = scheduleJobService;
-        this.scheduleCalculatorMachineEventHandler = scheduleCalculatorMachineEventHandler;
+        this.machineEventHandlers = machineEventHandlers;
+        this.machineEventProcessor = machineEventProcessor;
     }
 
     @Override
@@ -58,11 +65,12 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
         try {
             ScheduleChange scheduleChangeValidated = ScheduleChange.schedule_context_validated(scheduleContextValidated);
             ScheduledJobContext scheduledJobContext = scheduleJobService.calculateScheduledJobContext(scheduleJobRegistered);
-            ComplexAction complexAction = TimerActionHelper.buildTimerAction(scheduledJobContext.getNextFireTime());
-            log.info("Timer action: {}", complexAction);
+            HistoryRange historyRange = TimerActionHelper.buildLastEventHistoryRange();
+            ComplexAction complexAction = TimerActionHelper.buildTimerAction(scheduledJobContext.getNextFireTime(), historyRange);
+            log.info("[Signal Init] timer action: {}", complexAction);
             SignalResultData<ScheduleChange> signalResultData = new SignalResultData<>(
                     Value.nl(new Nil()),
-                    Arrays.asList(scheduleChangeRegistered, scheduleChangeValidated),
+                    Arrays.asList(scheduleChangeValidated, scheduleChangeRegistered),
                     complexAction);
             log.info("Response of processSignalInit: {}", signalResultData);
 
@@ -76,28 +84,15 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
     @Override
     public final SignalResultData<ScheduleChange> processSignalTimeout(TMachine<ScheduleChange> machine,
                                                                        List<TMachineEvent<ScheduleChange>> machineEventList) {
+        TMachineEvent<ScheduleChange> machineEvent = machineEventList.get(0); // Expect only one event
+
         log.info("Request processSignalTimeout() machineId: {} machineEventList: {}", machine.getMachineId(), machineEventList);
-
-        // Search deregister event
-        Optional<TMachineEvent<ScheduleChange>> scheduleJobDeregisteredEventOptional = machineEventList.stream()
-                .filter(machineEvent -> machineEvent.getData().isSetScheduleJobDeregistered())
-                .findFirst();
-
-        // Handle deregister event
-        if (scheduleJobDeregisteredEventOptional.isPresent()) {
-            log.info("Process job deregister event for machineId: {}", machine.getMachineId());
-            return processEvent(machine, scheduleJobDeregisteredEventOptional.get());
+        try {
+            return machineEventProcessor.process(machine, machineEvent);
+        } catch (MachineEventHandleException e) {
+            log.error("Exception while handle event for machineId = {}", machine, e);
+            throw new WUndefinedResultException(e);
         }
-
-        // Search register event
-        TMachineEvent<ScheduleChange> scheduleJobRegisteredEvent = machineEventList.stream()
-                .filter(machineEvent -> machineEvent.getData().isSetScheduleJobRegistered())
-                .findFirst()
-                .orElseThrow(() -> new NotFoundException("Couldn't found ScheduleJobRegistered for machineId = " + machine.getMachineId()));
-
-        // Handle register event
-        log.info("Process job register event (time calculation) for machineId: {}", machine.getMachineId());
-        return processEvent(machine, scheduleJobRegisteredEvent);
     }
 
     @Override
@@ -123,7 +118,8 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
         try {
             ByteBuffer contextValidationRequest = ByteBuffer.wrap(scheduleJobRegistered.getContext());
             log.info("Call validation context for '{}'", scheduleJobRegistered.getExecutorServicePath());
-            ContextValidationResponse contextValidationResponse = validateExecutionContext(scheduleJobRegistered.getExecutorServicePath(), contextValidationRequest);
+            ContextValidationResponse contextValidationResponse = remoteClientManager.validateExecutionContext(
+                    scheduleJobRegistered.getExecutorServicePath(), contextValidationRequest);
             log.info("Context validation response: {}", contextValidationResponse);
 
             return new ScheduleContextValidated(contextValidationRequest, contextValidationResponse);
@@ -133,25 +129,6 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
         } catch (TException e) {
             log.error("Unexpected exception while 'validateExecutionContext'");
             throw new WUndefinedResultException(e);
-        }
-    }
-
-    private SignalResultData<ScheduleChange> processEvent(TMachine<ScheduleChange> machine, TMachineEvent<ScheduleChange> event) {
-        try {
-            return scheduleCalculatorMachineEventHandler.handle(machine, event);
-        } catch (MachineEventHandleException e) {
-            log.error("Exception while handle event for machineId = {}", machine, e);
-            throw new WUndefinedResultException(e);
-        }
-    }
-
-    private ContextValidationResponse validateExecutionContext(String url, ByteBuffer context) throws TException {
-        ScheduledJobExecutorSrv.Iface client = remoteClientManager.getRemoteClient(url);
-        try {
-            return client.validateExecutionContext(context);
-        } catch (Exception e) {
-            log.error("Call remote client failed", e);
-            throw new WUnavailableResultException(e);
         }
     }
 

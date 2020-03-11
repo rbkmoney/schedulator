@@ -28,6 +28,9 @@ service:
   dominant:
     url: http://dominant:8022/v1/domain/repository_client
     networkTimeout: 5000
+    cache:
+      calendar:
+        expireMinutes: 1440
 retry-policy:
   dominant:
     maxAttempts: 10
