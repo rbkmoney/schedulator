@@ -23,6 +23,6 @@ public class DefaultMachineEventProcessor implements MachineEventProcessor {
                 return machineEventHandler.handleEvent(machine, machineEvent);
             }
         }
-        throw new MachineEventHandleException(String.format("Empty next event handler. Event '%s'", machine));
+        throw new MachineEventHandleException(String.format("Not found handler for event '%s'", machineEvent));
     }
 }
