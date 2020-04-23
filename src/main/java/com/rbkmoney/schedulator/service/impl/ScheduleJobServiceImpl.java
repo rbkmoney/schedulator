@@ -78,8 +78,9 @@ public class ScheduleJobServiceImpl implements ScheduleJobService {
                     dominantSchedule.getBusinessScheduleRef(), dominantSchedule.getRevision());
             Calendar calendar = dominantService.getCalendar(dominantSchedule.getCalendarRef(), dominantSchedule.getRevision());
 
+            TimeZone timeZone = TimeZone.getTimeZone(calendar.getTimezone());
             SchedulerCalculator schedulerCalculator = SchedulerCalculator.newSchedulerCalculator(
-                    ZonedDateTime.now(), calendar, businessSchedule);
+                    ZonedDateTime.now(timeZone.toZoneId()), calendar, businessSchedule);
             SchedulerComputeResult calcResult = schedulerCalculator.computeFireTime();
 
             String prevFireTime = TypeUtil.temporalToString(calcResult.getPrevFireTime());
