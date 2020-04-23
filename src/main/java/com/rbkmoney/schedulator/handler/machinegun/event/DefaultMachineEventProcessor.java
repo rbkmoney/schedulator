@@ -17,7 +17,8 @@ public class DefaultMachineEventProcessor implements MachineEventProcessor {
     private final List<MachineEventHandler> machineEventHandlers;
 
     @Override
-    public SignalResultData<ScheduleChange> process(TMachine<ScheduleChange> machine, TMachineEvent<ScheduleChange> machineEvent) {
+    public SignalResultData<ScheduleChange> process(TMachine<ScheduleChange> machine,
+                                                    TMachineEvent<ScheduleChange> machineEvent) {
         for (MachineEventHandler machineEventHandler : machineEventHandlers) {
             if (machineEventHandler.isHandle(machine, machineEvent)) {
                 return machineEventHandler.handleEvent(machine, machineEvent);

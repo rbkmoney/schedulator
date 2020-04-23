@@ -12,6 +12,8 @@ public class SchedulatorMachineState {
 
     private MachineRegisterState registerState;
 
+    private MachineTimerState timerState;
+
     public SchedulatorMachineState(ScheduleJobRegistered scheduleJobRegistered) {
         MachineRegisterState machineRegisterState = new MachineRegisterState();
         machineRegisterState.setContext(new RegisterContext(scheduleJobRegistered.getContext()));

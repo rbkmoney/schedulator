@@ -3,6 +3,7 @@ package com.rbkmoney.schedulator.handler.machinegun.event;
 import com.rbkmoney.damsel.domain.BusinessScheduleRef;
 import com.rbkmoney.damsel.domain.CalendarRef;
 import com.rbkmoney.damsel.schedule.*;
+import com.rbkmoney.geck.common.util.TypeUtil;
 import com.rbkmoney.machinarium.domain.SignalResultData;
 import com.rbkmoney.machinarium.domain.TMachine;
 import com.rbkmoney.machinarium.domain.TMachineEvent;
@@ -11,6 +12,7 @@ import com.rbkmoney.machinegun.stateproc.ComplexAction;
 import com.rbkmoney.machinegun.stateproc.HistoryRange;
 import com.rbkmoney.schedulator.serializer.MachineRegisterState;
 import com.rbkmoney.schedulator.serializer.MachineStateSerializer;
+import com.rbkmoney.schedulator.serializer.MachineTimerState;
 import com.rbkmoney.schedulator.serializer.SchedulatorMachineState;
 import com.rbkmoney.schedulator.service.ScheduleJobService;
 import com.rbkmoney.schedulator.service.model.ScheduleJobCalculateResult;
@@ -19,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.Collections;
 
 @Slf4j
@@ -43,21 +46,30 @@ public class JobExecutedMachineEventHandler implements MachineEventHandler {
         SchedulatorMachineState schedulatorMachineState = machineStateSerializer.deserializer(state);
         MachineRegisterState registerState = schedulatorMachineState.getRegisterState();
         ScheduleJobRegistered scheduleJobRegistered = mapToScheduleJobRegistered(registerState);
+        MachineTimerState timerState = schedulatorMachineState.getTimerState();
 
         // Calculate next execution
         ScheduleJobCalculateResult scheduleJobCalculateResult =
-                scheduleJobService.calculateNextExecutionTime(machine, scheduleJobRegistered);
+                scheduleJobService.calculateNextExecutionTime(machine, scheduleJobRegistered, timerState);
 
         ScheduleChange scheduleChange = ScheduleChange.schedule_job_executed(
-                new ScheduleJobExecuted(scheduleJobCalculateResult.getExecuteJobRequest(), scheduleJobCalculateResult.getRemoteJobContext())
+                new ScheduleJobExecuted(
+                        scheduleJobCalculateResult.getExecuteJobRequest(),
+                        scheduleJobCalculateResult.getRemoteJobContext()
+                )
         );
         ScheduledJobContext scheduledJobContext = scheduleJobCalculateResult.getScheduledJobContext();
         HistoryRange historyRange = TimerActionHelper.buildLastEventHistoryRange();
         ComplexAction complexAction = TimerActionHelper.buildTimerAction(
                 scheduledJobContext.getNextFireTime(), historyRange);
 
+        // Result machine state
+        Instant nextFireTime = TypeUtil.stringToInstant(scheduledJobContext.getNextFireTime());
+        schedulatorMachineState.getTimerState().setNextTimer(nextFireTime);
+        byte[] resultState = machineStateSerializer.serialize(schedulatorMachineState);
+
         SignalResultData<ScheduleChange> signalResultData = new SignalResultData<>(
-                Value.bin(state),
+                Value.bin(resultState),
                 Collections.singletonList(scheduleChange),
                 complexAction);
         log.info("Response of processSignalTimeout: {}", signalResultData);

@@ -43,7 +43,7 @@ import static org.mockito.Mockito.*;
 @SpringBootTest
 public class MgProcessorHandlerTest {
 
-    private static final String NEXT_FIRE_TIME = "31542524";
+    private static final String NEXT_FIRE_TIME = TypeUtil.temporalToString(Instant.now());
 
     @MockBean
     private DominantService dominantServiceMock;
@@ -116,7 +116,7 @@ public class MgProcessorHandlerTest {
     }
 
     @Test
-    public void fixedRetryMachineTest() throws TException {
+    public void fixedRetryRegisterMachineTest() throws TException {
         when(remoteClientManagerMock.getRemoteClient(anyString())).thenThrow(RemoteAccessException.class);
 
         SignalArgs firstSignalTimeoutRegister = buildSignalTimeoutRegister();
@@ -142,6 +142,41 @@ public class MgProcessorHandlerTest {
         Instant firstSignalInstant = TypeUtil.stringToInstant(firstSignalResultTimer.getDeadline());
         Instant secondSignalInstant = TypeUtil.stringToInstant(secondSignalResultTimer.getDeadline());
         Instant thirdSignalInstant = TypeUtil.stringToInstant(thirdSignalResultTimer.getDeadline());
+
+        long firstDuration = Duration.between(firstSignalInstant, secondSignalInstant).getSeconds();
+        long secondDuration = Duration.between(secondSignalInstant, thirdSignalInstant).getSeconds();
+
+        Assert.assertEquals("Duration between signal should be equals", firstDuration, secondDuration);
+    }
+
+    @Test
+    public void fixedRetryExecuteMachineTest() throws TException {
+        SignalArgs signalTimeoutRegister = buildSignalTimeoutRegister();
+        SignalResult signalTimeoutRegisterResult = mgProcessorHandler.processSignal(signalTimeoutRegister);
+
+        when(remoteClientManagerMock.getRemoteClient(anyString())).thenThrow(RemoteAccessException.class);
+
+        Content content = signalTimeoutRegisterResult.getChange().getEvents().get(0);
+        ScheduleChange scheduleChange = Geck.msgPackToTBase(content.getData().getBin(), ScheduleChange.class);
+        SignalArgs signalTimeoutExecutedFirst = buildSignalTimeoutExecuted(signalTimeoutRegisterResult.getChange().getAuxState(), scheduleChange);
+        SignalResult signalTimeoutExecutedResult = mgProcessorHandler.processSignal(signalTimeoutExecutedFirst);
+        Assert.assertTrue("Machine action should be 'timerAction'", signalTimeoutExecutedResult.getAction().isSetTimer());
+
+        SignalArgs signalTimeoutExecutedSecond = buildSignalTimeoutExecuted(signalTimeoutExecutedResult.getChange().getAuxState(), scheduleChange);
+        SignalResult signalTimeoutExecutedResultSecond = mgProcessorHandler.processSignal(signalTimeoutExecutedSecond);
+        Assert.assertTrue("Machine action should be 'timerAction'", signalTimeoutExecutedResultSecond.getAction().isSetTimer());
+
+        SignalArgs signalTimeoutExecutedThird = buildSignalTimeoutExecuted(signalTimeoutExecutedResultSecond.getChange().getAuxState(), scheduleChange);
+        SignalResult signalTimeoutExecutedResultThird = mgProcessorHandler.processSignal(signalTimeoutExecutedThird);
+        Assert.assertTrue("Machine action should be 'timerAction'", signalTimeoutExecutedResultThird.getAction().isSetTimer());
+
+        Timer firstTimer = signalTimeoutExecutedResult.getAction().getTimer().getSetTimer().getTimer();
+        Timer secondTimer = signalTimeoutExecutedResultSecond.getAction().getTimer().getSetTimer().getTimer();
+        Timer thirdTimer = signalTimeoutExecutedResultThird.getAction().getTimer().getSetTimer().getTimer();
+
+        Instant firstSignalInstant = TypeUtil.stringToInstant(firstTimer.getDeadline());
+        Instant secondSignalInstant = TypeUtil.stringToInstant(secondTimer.getDeadline());
+        Instant thirdSignalInstant = TypeUtil.stringToInstant(thirdTimer.getDeadline());
 
         long firstDuration = Duration.between(firstSignalInstant, secondSignalInstant).getSeconds();
         long secondDuration = Duration.between(secondSignalInstant, thirdSignalInstant).getSeconds();
@@ -221,8 +256,6 @@ public class MgProcessorHandlerTest {
     }
 
     private SignalArgs buildSignalTimeoutDeregister() {
-        Schedule businessSchedule = buildBusinessSchedule();
-
         ScheduleChange scheduleChangeDeregister = ScheduleChange.schedule_job_deregistered(new ScheduleJobDeregistered());
 
         Event deregisterEvent = new Event(1L, Instant.now().toString(), Value.bin(Geck.toMsgPack(scheduleChangeDeregister)));
@@ -235,6 +268,23 @@ public class MgProcessorHandlerTest {
                                 .setNs("schedulator")
                                 .setHistory(List.of(deregisterEvent))
                                 .setHistoryRange(new HistoryRange())
+                );
+    }
+
+    private SignalArgs buildSignalTimeoutExecuted(Content auxState, ScheduleChange scheduleChange) {
+        ExecuteJobRequest executeJobRequest = new ExecuteJobRequest();
+        ScheduleChange scheduleJobExecuted = ScheduleChange.schedule_job_executed(new ScheduleJobExecuted());
+        Event deregisterEvent = new Event(1L, Instant.now().toString(), Value.bin(Geck.toMsgPack(scheduleChange)));
+
+        return new SignalArgs()
+                .setSignal(Signal.timeout(new TimeoutSignal()))
+                .setMachine(
+                        new Machine()
+                                .setId("schedule_id_test")
+                                .setNs("schedulator")
+                                .setHistory(List.of(deregisterEvent))
+                                .setHistoryRange(new HistoryRange())
+                                .setAuxState(auxState)
                 );
     }
 

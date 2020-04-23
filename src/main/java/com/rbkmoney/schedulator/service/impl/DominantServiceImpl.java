@@ -40,7 +40,6 @@ public class DominantServiceImpl implements DominantService {
     }
 
     @Override
-    // TODO: Cache на загрузку календаря
     public Calendar getCalendar(CalendarRef calendarRef, long domainRevision) {
         Reference revisionReference = Reference.version(domainRevision);
         log.info("Trying to get calendar, calendarRef='{}', revisionReference='{}'", calendarRef, revisionReference);
