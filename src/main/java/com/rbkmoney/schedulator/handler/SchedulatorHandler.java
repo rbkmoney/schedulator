@@ -46,14 +46,15 @@ public class SchedulatorHandler implements SchedulatorSrv.Iface {
         List<TMachineEvent<ScheduleChange>> events = automatonClient.getEvents(scheduleId);
         log.info("ScheduleId '{}' events size: {}", scheduleId, events.size());
         if (!isScheduleContextValidated(events)) {
-            throw new IllegalStateException("Incorrect state of machine " + scheduleId);
+            throw new IllegalStateException(String.format("Incorrect state of machine %s. Events: %s", scheduleId, events));
         }
 
-        ContextValidationResponse validationResponse = events.get(1).getData().getScheduleContextValidated().getResponse();
+        ScheduleContextValidated schedulerContextValidated = findSchedulerContextValidated(events);
+        ContextValidationResponse validationResponse = schedulerContextValidated.getResponse();
         if (validationResponse.getResponseStatus().isSetFailed()) {
-            if (!validationResponse.getResponseStatus().getFailed().getErrors().isEmpty()) {
-                throw new BadContextProvided(validationResponse);
-            }
+            List<String> errors = validationResponse.getResponseStatus().getFailed().getErrors();
+            log.warn("Bad validation response. Errors: {}", errors);
+            throw new BadContextProvided(validationResponse);
         }
         log.info("Job with scheduleId {} successfully registered", scheduleId);
     }
@@ -69,7 +70,15 @@ public class SchedulatorHandler implements SchedulatorSrv.Iface {
         log.info("Job with scheduleId {} successfully deregistered", scheduleId);
     }
 
+    private ScheduleContextValidated findSchedulerContextValidated(List<TMachineEvent<ScheduleChange>> events) {
+        return events.stream()
+                .filter(event -> event.getData().isSetScheduleContextValidated())
+                .map(event -> event.getData().getScheduleContextValidated())
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Not found validate schedule context"));
+    }
+
     private boolean isScheduleContextValidated(List<TMachineEvent<ScheduleChange>> events) {
-        return events.size() >= 2 && events.get(1).getData().isSetScheduleContextValidated();
+        return events.stream().anyMatch(event -> event.getData().isSetScheduleContextValidated());
     }
 }
