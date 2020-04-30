@@ -63,6 +63,8 @@ public class JobExecutedMachineEventHandler implements MachineEventHandler {
         ComplexAction complexAction = TimerActionHelper.buildTimerAction(
                 scheduledJobContext.getNextFireTime(), historyRange);
 
+        log.info("Timer action: {}", complexAction);
+
         // Result machine state
         Instant nextFireTime = TypeUtil.stringToInstant(scheduledJobContext.getNextFireTime());
         schedulatorMachineState.getTimerState().setNextTimer(nextFireTime);
