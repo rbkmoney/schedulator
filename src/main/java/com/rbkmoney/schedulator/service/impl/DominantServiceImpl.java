@@ -24,13 +24,13 @@ public class DominantServiceImpl implements DominantService {
     @Override
     public BusinessSchedule getBusinessSchedule(BusinessScheduleRef scheduleRef, long domainRevision) {
         Reference revisionReference = Reference.version(domainRevision);
-        log.info("Trying to get schedule, scheduleRef='{}', revisionReference='{}'", scheduleRef, revisionReference);
+        log.debug("Trying to get schedule, scheduleRef='{}', revisionReference='{}'", scheduleRef, revisionReference);
         try {
             com.rbkmoney.damsel.domain.Reference reference = new com.rbkmoney.damsel.domain.Reference();
             reference.setBusinessSchedule(scheduleRef);
             VersionedObject versionedObject = checkoutObject(revisionReference, reference);
             BusinessSchedule schedule = versionedObject.getObject().getBusinessSchedule().getData();
-            log.info("Schedule has been found, scheduleRef='{}', revisionReference='{}', schedule='{}'", scheduleRef, revisionReference, schedule);
+            log.debug("Schedule has been found, scheduleRef='{}', revisionReference='{}', schedule='{}'", scheduleRef, revisionReference, schedule);
             return schedule;
         } catch (VersionNotFound | ObjectNotFound ex) {
             throw new NotFoundException(String.format("Version not found, scheduleRef='%s', revisionReference='%s'", scheduleRef, revisionReference), ex);
@@ -42,13 +42,13 @@ public class DominantServiceImpl implements DominantService {
     @Override
     public Calendar getCalendar(CalendarRef calendarRef, long domainRevision) {
         Reference revisionReference = Reference.version(domainRevision);
-        log.info("Trying to get calendar, calendarRef='{}', revisionReference='{}'", calendarRef, revisionReference);
+        log.debug("Trying to get calendar, calendarRef='{}', revisionReference='{}'", calendarRef, revisionReference);
         try {
             com.rbkmoney.damsel.domain.Reference reference = new com.rbkmoney.damsel.domain.Reference();
             reference.setCalendar(calendarRef);
             VersionedObject versionedObject = checkoutObject(revisionReference, reference);
             Calendar calendar = versionedObject.getObject().getCalendar().getData();
-            log.info("Calendar has been found, calendarRef='{}', revisionReference='{}', calendar='{}'", calendarRef, revisionReference, calendar);
+            log.debug("Calendar has been found, calendarRef='{}', revisionReference='{}', calendar='{}'", calendarRef, revisionReference, calendar);
             return calendar;
         } catch (VersionNotFound | ObjectNotFound ex) {
             throw new NotFoundException(String.format("Version not found, calendarRef='%s', revisionReference='%s'", calendarRef, revisionReference), ex);

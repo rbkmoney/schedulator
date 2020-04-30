@@ -41,7 +41,7 @@ public class ScheduleJobServiceImpl implements ScheduleJobService {
                                                                  ScheduleJobRegistered scheduleJobRegistered,
                                                                  MachineTimerState machineTimerState) {
         // Calculate execution time
-        log.info("Calculate execution time");
+        log.trace("Calculate execution time");
         ExecuteJobRequest executeJobRequest = new ExecuteJobRequest();
         ScheduledJobContext scheduledJobContext = calculateScheduledJobContext(scheduleJobRegistered);
         executeJobRequest.setScheduledJobContext(scheduledJobContext);
@@ -57,7 +57,7 @@ public class ScheduleJobServiceImpl implements ScheduleJobService {
 
         // Calculate retry execution time
         if (remoteJobContext == null) {
-            log.info("Calculate retry execution time");
+            log.trace("Calculate retry execution time");
             remoteJobContext = ByteBuffer.wrap(scheduleJobRegistered.getContext()); // Set old execution context
             scheduledJobContext = calculateRetryJobContext(scheduleJobRegistered, machineTimerState);
         }
@@ -73,7 +73,7 @@ public class ScheduleJobServiceImpl implements ScheduleJobService {
     public ScheduledJobContext calculateScheduledJobContext(ScheduleJobRegistered scheduleJobRegistered) {
         DominantBasedSchedule dominantSchedule = scheduleJobRegistered.getSchedule().getDominantSchedule();
         try {
-            log.info("Get scheduler job context from dominant: {}", dominantSchedule);
+            log.debug("Get scheduler job context from dominant: {}", dominantSchedule);
             BusinessSchedule businessSchedule = dominantService.getBusinessSchedule(
                     dominantSchedule.getBusinessScheduleRef(), dominantSchedule.getRevision());
             Calendar calendar = dominantService.getCalendar(dominantSchedule.getCalendarRef(), dominantSchedule.getRevision());

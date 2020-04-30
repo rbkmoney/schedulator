@@ -10,8 +10,6 @@ import com.rbkmoney.machinegun.msgpack.Nil;
 import com.rbkmoney.machinegun.msgpack.Value;
 import com.rbkmoney.machinegun.stateproc.ComplexAction;
 import com.rbkmoney.machinegun.stateproc.HistoryRange;
-import com.rbkmoney.machinegun.stateproc.TimerAction;
-import com.rbkmoney.machinegun.stateproc.UnsetTimerAction;
 import com.rbkmoney.schedulator.handler.machinegun.event.MachineEventHandler;
 import com.rbkmoney.schedulator.handler.machinegun.event.MachineEventProcessor;
 import com.rbkmoney.schedulator.service.RemoteClientManager;
@@ -100,15 +98,12 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
                                                             ScheduleChange scheduleChange,
                                                             List<TMachineEvent<ScheduleChange>> machineEvents) {
         log.info("Request processCall() machineId: {} scheduleChange: {} machineEvents: {}", machineId, scheduleChange, machineEvents);
-        ComplexAction complexAction = new ComplexAction();
-        TimerAction timer = new TimerAction();
-        timer.setUnsetTimer(new UnsetTimerAction());
-        complexAction.setTimer(timer);
+        ComplexAction removeAction = TimerActionHelper.buildRemoveAction();
         CallResultData<ScheduleChange> callResultData = new CallResultData<>(
                 Value.nl(new Nil()),
                 scheduleChange,
                 Collections.singletonList(scheduleChange),
-                complexAction);
+                removeAction);
         log.info("Response of processCall: {}", callResultData);
         return callResultData;
     }

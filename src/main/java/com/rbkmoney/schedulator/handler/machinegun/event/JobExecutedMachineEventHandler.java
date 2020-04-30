@@ -72,7 +72,7 @@ public class JobExecutedMachineEventHandler implements MachineEventHandler {
                 Value.bin(resultState),
                 Collections.singletonList(scheduleChange),
                 complexAction);
-        log.info("Response of processSignalTimeout: {}", signalResultData);
+        log.debug("Response of processSignalTimeout: {}", signalResultData);
 
         return signalResultData;
     }
