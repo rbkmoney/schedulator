@@ -41,7 +41,7 @@ public class JobRegisteredMachineEventHandler implements MachineEventHandler {
 
             // Calculate next execution time
             ScheduleJobCalculateResult scheduleJobCalculateResult =
-                    scheduleJobService.calculateNextExecutionTime(scheduleJobRegistered, new MachineTimerState());
+                    scheduleJobService.calculateNextExecutionTime(scheduleJobRegistered, null);
 
             // Build timeout signal result
             ScheduleChange scheduleChange = ScheduleChange.schedule_job_executed(

@@ -5,7 +5,7 @@ import com.rbkmoney.damsel.domain.Calendar;
 import com.rbkmoney.damsel.schedule.*;
 import com.rbkmoney.geck.common.util.TypeUtil;
 import com.rbkmoney.schedulator.backoff.JobExponentialBackOff;
-import com.rbkmoney.schedulator.config.properties.JobRetryConfig;
+import com.rbkmoney.schedulator.config.properties.JobRetryProperties;
 import com.rbkmoney.schedulator.cron.SchedulerCalculator;
 import com.rbkmoney.schedulator.cron.SchedulerComputeResult;
 import com.rbkmoney.schedulator.exception.NotFoundException;
@@ -38,11 +38,13 @@ public class ScheduleJobServiceImpl implements ScheduleJobService {
 
     private final DominantService dominantService;
 
-    private final JobRetryConfig jobRetryConfig;
+    private final JobRetryProperties jobRetryProperties;
 
     public ScheduleJobCalculateResult calculateNextExecutionTime(ScheduleJobRegistered scheduleJobRegistered,
                                                                  MachineTimerState machineTimerState) {
-        // Calculate execution time
+        if (machineTimerState == null) {
+            machineTimerState = new MachineTimerState();
+        }
         log.trace("Calculate execution time");
         ExecuteJobRequest executeJobRequest = new ExecuteJobRequest();
         ScheduledJobContext scheduledJobContext = calculateScheduledJobContext(scheduleJobRegistered);
@@ -60,14 +62,14 @@ public class ScheduleJobServiceImpl implements ScheduleJobService {
         } catch (RemoteJobExecuteException e) {
             // Calculate retry execution time
             resultMachineTimerState.setJobRetryCount(resultMachineTimerState.getJobRetryCount() + 1);
-            if (machineTimerState.getJobRetryCount() > jobRetryConfig.getJob().getMaxAttempts()) {
+            if (machineTimerState.getJobRetryCount() > jobRetryProperties.getMaxAttempts()) {
                 throw new ScheduleJobCalculateException("Max retry count exceeded");
             }
             log.trace("Calculate retry execution time");
             remoteJobContext = ByteBuffer.wrap(scheduleJobRegistered.getContext()); // Set old execution context
 
             RetryJobContext retryJobContext = calculateRetryJobContext(scheduleJobRegistered, machineTimerState);
-            scheduledJobContext = retryJobContext.getScheduledJobContext(); // retry context
+            scheduledJobContext = retryJobContext.getScheduledJobContext();
             resultMachineTimerState.setCurrentInterval(retryJobContext.getCurrentInterval());
         }
 
@@ -115,15 +117,15 @@ public class ScheduleJobServiceImpl implements ScheduleJobService {
             TimeZone timeZone = TimeZone.getTimeZone(calendar.getTimezone());
 
             JobExponentialBackOff backOff = new JobExponentialBackOff(
-                    jobRetryConfig.getJob().getMaxIntervalSeconds(),
-                    jobRetryConfig.getJob().getInitialIntervalSeconds(),
+                    jobRetryProperties.getMaxIntervalSeconds(),
+                    jobRetryProperties.getInitialIntervalSeconds(),
                     timerState.getCurrentInterval());
             Instant now = Instant.now(Clock.system(timeZone.toZoneId()));
             long interval = backOff.nextBackOff();
 
             String nextFireTime = TypeUtil.temporalToString(now.plusSeconds(interval));
 
-            ScheduledJobContext scheduledJobContext = new ScheduledJobContext(nextFireTime, null, null);
+            ScheduledJobContext scheduledJobContext = new ScheduledJobContext().setNextFireTime(nextFireTime);
 
             return new RetryJobContext(scheduledJobContext, interval);
         } catch (NotFoundException e) {

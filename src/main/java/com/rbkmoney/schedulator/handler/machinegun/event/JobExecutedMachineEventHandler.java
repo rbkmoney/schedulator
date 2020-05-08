@@ -46,7 +46,6 @@ public class JobExecutedMachineEventHandler implements MachineEventHandler {
         ScheduleJobRegistered scheduleJobRegistered = mapToScheduleJobRegistered(registerState);
         MachineTimerState timerState = schedulatorMachineState.getTimerState();
 
-        // Calculate next execution
         ScheduleJobCalculateResult scheduleJobCalculateResult =
                 scheduleJobService.calculateNextExecutionTime(scheduleJobRegistered, timerState);
 
