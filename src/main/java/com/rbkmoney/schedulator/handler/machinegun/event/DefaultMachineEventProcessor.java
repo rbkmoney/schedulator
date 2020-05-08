@@ -21,7 +21,11 @@ public class DefaultMachineEventProcessor implements MachineEventProcessor {
                                                     TMachineEvent<ScheduleChange> machineEvent) {
         for (MachineEventHandler machineEventHandler : machineEventHandlers) {
             if (machineEventHandler.isHandle(machine, machineEvent)) {
-                return machineEventHandler.handleEvent(machine, machineEvent);
+                try {
+                    return machineEventHandler.handleEvent(machine, machineEvent);
+                } catch (Exception e) {
+                    throw new MachineEventHandleException("Exception during handle machine event", e);
+                }
             }
         }
         throw new MachineEventHandleException(String.format("Not found handler for event '%s'", machineEvent));

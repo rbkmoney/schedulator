@@ -4,19 +4,21 @@ import com.rbkmoney.damsel.domain.BusinessSchedule;
 import com.rbkmoney.damsel.domain.Calendar;
 import com.rbkmoney.damsel.schedule.*;
 import com.rbkmoney.geck.common.util.TypeUtil;
-import com.rbkmoney.machinarium.domain.TMachine;
+import com.rbkmoney.schedulator.backoff.JobExponentialBackOff;
+import com.rbkmoney.schedulator.config.properties.JobRetryConfig;
 import com.rbkmoney.schedulator.cron.SchedulerCalculator;
 import com.rbkmoney.schedulator.cron.SchedulerComputeResult;
 import com.rbkmoney.schedulator.exception.NotFoundException;
 import com.rbkmoney.schedulator.handler.machinegun.RemoteJobExecuteException;
+import com.rbkmoney.schedulator.serializer.MachineStateSerializer;
 import com.rbkmoney.schedulator.serializer.MachineTimerState;
 import com.rbkmoney.schedulator.service.DominantService;
 import com.rbkmoney.schedulator.service.RemoteClientManager;
 import com.rbkmoney.schedulator.service.ScheduleJobService;
 import com.rbkmoney.schedulator.service.model.ScheduleJobCalculateResult;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.nio.ByteBuffer;
@@ -30,15 +32,15 @@ import java.util.TimeZone;
 @RequiredArgsConstructor
 public class ScheduleJobServiceImpl implements ScheduleJobService {
 
+    private final MachineStateSerializer machineStateSerializer;
+
     private final RemoteClientManager remoteClientManager;
 
     private final DominantService dominantService;
 
-    @Value("${retry-policy.job.intervalSeconds:30}")
-    private int retryInterval;
+    private final JobRetryConfig jobRetryConfig;
 
-    public ScheduleJobCalculateResult calculateNextExecutionTime(TMachine<ScheduleChange> machine,
-                                                                 ScheduleJobRegistered scheduleJobRegistered,
+    public ScheduleJobCalculateResult calculateNextExecutionTime(ScheduleJobRegistered scheduleJobRegistered,
                                                                  MachineTimerState machineTimerState) {
         // Calculate execution time
         log.trace("Calculate execution time");
@@ -48,24 +50,32 @@ public class ScheduleJobServiceImpl implements ScheduleJobService {
         executeJobRequest.setServiceExecutionContext(scheduleJobRegistered.getContext());
 
         String url = scheduleJobRegistered.getExecutorServicePath();
+        MachineTimerState resultMachineTimerState = new MachineTimerState();
+        resultMachineTimerState.setJobRetryCount(machineTimerState.getJobRetryCount());
+        resultMachineTimerState.setCurrentInterval(machineTimerState.getCurrentInterval());
         ByteBuffer remoteJobContext = null;
         try {
             remoteJobContext = callRemoteJob(url, executeJobRequest);
+            resultMachineTimerState.setJobRetryCount(0); // Reset retry count
         } catch (RemoteJobExecuteException e) {
-            log.error("Call '{}' job failed", e.getUrl(), e);
-        }
-
-        // Calculate retry execution time
-        if (remoteJobContext == null) {
+            // Calculate retry execution time
+            resultMachineTimerState.setJobRetryCount(resultMachineTimerState.getJobRetryCount() + 1);
+            if (machineTimerState.getJobRetryCount() > jobRetryConfig.getJob().getMaxAttempts()) {
+                throw new ScheduleJobCalculateException("Max retry count exceeded");
+            }
             log.trace("Calculate retry execution time");
             remoteJobContext = ByteBuffer.wrap(scheduleJobRegistered.getContext()); // Set old execution context
-            scheduledJobContext = calculateRetryJobContext(scheduleJobRegistered, machineTimerState);
+
+            RetryJobContext retryJobContext = calculateRetryJobContext(scheduleJobRegistered, machineTimerState);
+            scheduledJobContext = retryJobContext.getScheduledJobContext(); // retry context
+            resultMachineTimerState.setCurrentInterval(retryJobContext.getCurrentInterval());
         }
 
         return ScheduleJobCalculateResult.builder()
                 .executeJobRequest(executeJobRequest)
                 .scheduledJobContext(scheduledJobContext)
                 .remoteJobContext(remoteJobContext)
+                .machineTimerState(resultMachineTimerState)
                 .build();
     }
 
@@ -97,22 +107,25 @@ public class ScheduleJobServiceImpl implements ScheduleJobService {
         }
     }
 
-    @Override
-    public ScheduledJobContext calculateRetryJobContext(ScheduleJobRegistered scheduleJobRegistered,
-                                                        MachineTimerState timerState) {
+    private RetryJobContext calculateRetryJobContext(ScheduleJobRegistered scheduleJobRegistered,
+                                                     MachineTimerState timerState) {
         DominantBasedSchedule dominantSchedule = scheduleJobRegistered.getSchedule().getDominantSchedule();
         try {
             Calendar calendar = dominantService.getCalendar(dominantSchedule.getCalendarRef(), dominantSchedule.getRevision());
             TimeZone timeZone = TimeZone.getTimeZone(calendar.getTimezone());
 
-            Instant nextTimer = timerState != null ? timerState.getNextTimer() : null;
-            if (nextTimer == null) {
-                nextTimer = Instant.now(Clock.system(timeZone.toZoneId())); // Set timer from now
-            }
+            JobExponentialBackOff backOff = new JobExponentialBackOff(
+                    jobRetryConfig.getJob().getMaxIntervalSeconds(),
+                    jobRetryConfig.getJob().getInitialIntervalSeconds(),
+                    timerState.getCurrentInterval());
+            Instant now = Instant.now(Clock.system(timeZone.toZoneId()));
+            long interval = backOff.nextBackOff();
 
-            String nextFireTime = TypeUtil.temporalToString(nextTimer.plusSeconds(retryInterval));
+            String nextFireTime = TypeUtil.temporalToString(now.plusSeconds(interval));
 
-            return new ScheduledJobContext(nextFireTime, null, null);
+            ScheduledJobContext scheduledJobContext = new ScheduledJobContext(nextFireTime, null, null);
+
+            return new RetryJobContext(scheduledJobContext, interval);
         } catch (NotFoundException e) {
             throw new ScheduleJobCalculateException(
                     String.format("Can't find 'businessSchedule' from dominant: %s", dominantSchedule), e);
@@ -129,6 +142,15 @@ public class ScheduleJobServiceImpl implements ScheduleJobService {
         } catch (Exception e) {
             throw new RemoteJobExecuteException(url, e);
         }
+    }
+
+    @Data
+    private static final class RetryJobContext {
+
+        private final ScheduledJobContext scheduledJobContext;
+
+        private final long currentInterval;
+
     }
 
 }

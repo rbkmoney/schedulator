@@ -35,7 +35,9 @@ retry-policy:
   dominant:
     maxAttempts: 10
   job:
-    intervalSeconds: 35
+    initialIntervalSeconds: 35
+    maxIntervalSeconds: 3600
+    maxAttempts: 10
 
 cache:
   maxSize: 100

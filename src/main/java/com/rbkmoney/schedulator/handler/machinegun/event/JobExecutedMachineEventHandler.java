@@ -3,7 +3,6 @@ package com.rbkmoney.schedulator.handler.machinegun.event;
 import com.rbkmoney.damsel.domain.BusinessScheduleRef;
 import com.rbkmoney.damsel.domain.CalendarRef;
 import com.rbkmoney.damsel.schedule.*;
-import com.rbkmoney.geck.common.util.TypeUtil;
 import com.rbkmoney.machinarium.domain.SignalResultData;
 import com.rbkmoney.machinarium.domain.TMachine;
 import com.rbkmoney.machinarium.domain.TMachineEvent;
@@ -21,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
 import java.util.Collections;
 
 @Slf4j
@@ -50,7 +48,7 @@ public class JobExecutedMachineEventHandler implements MachineEventHandler {
 
         // Calculate next execution
         ScheduleJobCalculateResult scheduleJobCalculateResult =
-                scheduleJobService.calculateNextExecutionTime(machine, scheduleJobRegistered, timerState);
+                scheduleJobService.calculateNextExecutionTime(scheduleJobRegistered, timerState);
 
         ScheduleChange scheduleChange = ScheduleChange.schedule_job_executed(
                 new ScheduleJobExecuted(
@@ -63,11 +61,10 @@ public class JobExecutedMachineEventHandler implements MachineEventHandler {
         ComplexAction complexAction = TimerActionHelper.buildTimerAction(
                 scheduledJobContext.getNextFireTime(), historyRange);
 
-        log.info("Timer action: {}", complexAction);
+        log.info("Next timer action: {}", complexAction);
 
         // Result machine state
-        Instant nextFireTime = TypeUtil.stringToInstant(scheduledJobContext.getNextFireTime());
-        schedulatorMachineState.getTimerState().setNextTimer(nextFireTime);
+        schedulatorMachineState.setTimerState(scheduleJobCalculateResult.getMachineTimerState());
         byte[] resultState = machineStateSerializer.serialize(schedulatorMachineState);
 
         SignalResultData<ScheduleChange> signalResultData = new SignalResultData<>(

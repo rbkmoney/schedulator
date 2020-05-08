@@ -41,7 +41,7 @@ public class JobRegisteredMachineEventHandler implements MachineEventHandler {
 
             // Calculate next execution time
             ScheduleJobCalculateResult scheduleJobCalculateResult =
-                    scheduleJobService.calculateNextExecutionTime(machine, scheduleJobRegistered, null);
+                    scheduleJobService.calculateNextExecutionTime(scheduleJobRegistered, new MachineTimerState());
 
             // Build timeout signal result
             ScheduleChange scheduleChange = ScheduleChange.schedule_job_executed(
@@ -52,7 +52,7 @@ public class JobRegisteredMachineEventHandler implements MachineEventHandler {
             ComplexAction complexAction = TimerActionHelper.buildTimerAction(
                     scheduledJobContext.getNextFireTime(), historyRange);
 
-            log.info("[ScheduleCalculator] timer action: {}", complexAction);
+            log.info("Next timer action: {}", complexAction);
 
             SchedulatorMachineState schedulatorMachineState = new SchedulatorMachineState(scheduleJobRegistered);
             schedulatorMachineState.setTimerState(new MachineTimerState());

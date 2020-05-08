@@ -2,11 +2,11 @@ package com.rbkmoney.schedulator.serializer;
 
 import lombok.Data;
 
-import java.time.Instant;
-
 @Data
 public class MachineTimerState {
 
-    private Instant nextTimer;
+    private int jobRetryCount;
+
+    private long currentInterval = -1;
 
 }

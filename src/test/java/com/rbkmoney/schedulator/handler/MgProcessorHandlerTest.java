@@ -13,12 +13,12 @@ import com.rbkmoney.machinegun.base.Timer;
 import com.rbkmoney.machinegun.msgpack.Value;
 import com.rbkmoney.machinegun.stateproc.*;
 import com.rbkmoney.schedulator.ScheduleTestData;
-import com.rbkmoney.schedulator.exception.NotFoundException;
 import com.rbkmoney.schedulator.serializer.MachineStateSerializer;
 import com.rbkmoney.schedulator.serializer.SchedulatorMachineState;
 import com.rbkmoney.schedulator.service.DominantService;
 import com.rbkmoney.schedulator.service.RemoteClientManager;
 import com.rbkmoney.schedulator.service.ScheduleJobService;
+import com.rbkmoney.woody.api.flow.error.WUndefinedResultException;
 import org.apache.thrift.TException;
 import org.junit.Assert;
 import org.junit.Before;
@@ -181,7 +181,33 @@ public class MgProcessorHandlerTest {
         long firstDuration = Duration.between(firstSignalInstant, secondSignalInstant).getSeconds();
         long secondDuration = Duration.between(secondSignalInstant, thirdSignalInstant).getSeconds();
 
-        Assert.assertEquals("Duration between signal should be equals", firstDuration, secondDuration);
+        Assert.assertTrue(firstDuration > 0);
+        Assert.assertTrue(secondDuration > 0);
+
+        long prevDuration = secondDuration / 2;
+        Assert.assertEquals("Duration of the second signal should be twice as long as the first", prevDuration, firstDuration);
+    }
+
+    @Test(expected = WUndefinedResultException.class)
+    public void maxRetryCountTest() throws TException {
+        SignalArgs signalTimeoutRegister = buildSignalTimeoutRegister();
+        SignalResult signalTimeoutRegisterResult = mgProcessorHandler.processSignal(signalTimeoutRegister);
+
+        when(remoteClientManagerMock.getRemoteClient(anyString())).thenThrow(RemoteAccessException.class);
+
+        Content content = signalTimeoutRegisterResult.getChange().getEvents().get(0);
+        ScheduleChange scheduleChange = Geck.msgPackToTBase(content.getData().getBin(), ScheduleChange.class);
+        SignalResult signalResult = null;
+        for (int i = 0; i < 12; i++) {
+            SignalArgs signalArgs;
+            if (signalResult != null) {
+                signalArgs = buildSignalTimeoutExecuted(signalResult.getChange().getAuxState(), scheduleChange);
+            } else {
+                signalArgs = buildSignalTimeoutExecuted(signalTimeoutRegisterResult.getChange().getAuxState(), scheduleChange);
+
+            }
+            signalResult = mgProcessorHandler.processSignal(signalArgs);
+        }
     }
 
     @Test
