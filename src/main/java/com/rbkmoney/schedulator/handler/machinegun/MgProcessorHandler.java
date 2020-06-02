@@ -1,6 +1,7 @@
 package com.rbkmoney.schedulator.handler.machinegun;
 
 import com.rbkmoney.damsel.schedule.*;
+import com.rbkmoney.geck.common.util.TypeUtil;
 import com.rbkmoney.machinarium.domain.CallResultData;
 import com.rbkmoney.machinarium.domain.SignalResultData;
 import com.rbkmoney.machinarium.domain.TMachine;
@@ -23,6 +24,7 @@ import org.apache.thrift.TException;
 import org.springframework.stereotype.Component;
 
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -81,10 +83,14 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
     @Override
     public final SignalResultData<ScheduleChange> processSignalTimeout(TMachine<ScheduleChange> machine,
                                                                        List<TMachineEvent<ScheduleChange>> machineEventList) {
-        TMachineEvent<ScheduleChange> machineEvent = machineEventList.get(0); // Expect only one event
-
-        log.info("Request processSignalTimeout() machineId: {} machineEventList: {}", machine.getMachineId(), machineEventList);
         try {
+            if (machineEventList.isEmpty()) {
+                throw new MachineEventHandleException("Machine events can't be empty");
+            }
+            TMachineEvent<ScheduleChange> machineEvent = machineEventList.get(0); // Expect only one event
+
+            log.info("Request processSignalTimeout() machineId: {} machineEventList: {}", machine.getMachineId(), machineEventList);
+
             return machineEventProcessor.process(machine, machineEvent);
         } catch (MachineEventHandleException e) {
             log.error("Exception while handle event for machineId = {}", machine, e);

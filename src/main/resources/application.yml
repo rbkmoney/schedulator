@@ -19,15 +19,15 @@ info:
 service:
   mg:
     automaton:
-      url: http://localhost:8080/v1/automaton
+      url: http://machinegun:8022/v1/automaton
       namespace: schedulator
     eventSink:
       url: http://localhost:8022/v1/event_sink
       sinkId: schedulator
-    networkTimeout: 5000
+    networkTimeout: 30000
   dominant:
     url: http://dominant:8022/v1/domain/repository_client
-    networkTimeout: 5000
+    networkTimeout: 30000
     cache:
       calendar:
         expireMinutes: 1440

@@ -32,8 +32,6 @@ import java.util.TimeZone;
 @RequiredArgsConstructor
 public class ScheduleJobServiceImpl implements ScheduleJobService {
 
-    private final MachineStateSerializer machineStateSerializer;
-
     private final RemoteClientManager remoteClientManager;
 
     private final DominantService dominantService;

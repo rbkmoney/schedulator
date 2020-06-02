@@ -2,15 +2,16 @@ package com.rbkmoney.schedulator;
 
 import com.opencsv.CSVReader;
 import com.rbkmoney.damsel.base.*;
-import com.rbkmoney.damsel.domain.BusinessSchedule;
-import com.rbkmoney.damsel.domain.Calendar;
-import com.rbkmoney.damsel.domain.CalendarHoliday;
+import com.rbkmoney.damsel.domain.*;
+import com.rbkmoney.damsel.schedule.DominantBasedSchedule;
+import com.rbkmoney.damsel.schedule.RegisterJobRequest;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -18,6 +19,25 @@ import java.util.Set;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ScheduleTestData {
+
+    public static RegisterJobRequest buildRegisterJobRequest() {
+        RegisterJobRequest registerJobRequest = new RegisterJobRequest();
+        registerJobRequest.setContext(ByteBuffer.wrap(new byte[]{}));
+        registerJobRequest.setExecutorServicePath("testUrl");
+        registerJobRequest.setSchedule(com.rbkmoney.damsel.schedule.Schedule.dominant_schedule(buildDominantSchedule()));
+
+        return registerJobRequest;
+    }
+
+    public static DominantBasedSchedule buildDominantSchedule() {
+        DominantBasedSchedule dominantBasedSchedule = new DominantBasedSchedule();
+        dominantBasedSchedule.setRevision(1);
+        dominantBasedSchedule.setBusinessScheduleRef(new BusinessScheduleRef(1));
+        dominantBasedSchedule.setCalendarRef(new CalendarRef(1));
+        com.rbkmoney.damsel.schedule.Schedule.dominant_schedule(dominantBasedSchedule);
+
+        return dominantBasedSchedule;
+    }
 
     public static Calendar buildTestCalendar() throws IOException {
         Calendar calendar = new Calendar();
@@ -71,7 +91,11 @@ public class ScheduleTestData {
         schedule.setYear(scheduleYear);
 
         ScheduleMonth scheduleMonth = new ScheduleMonth();
-        scheduleMonth.setOn(Set.of(month));
+        if (month == null) {
+            scheduleMonth.setEvery(new ScheduleEvery());
+        } else {
+            scheduleMonth.setOn(Set.of(month));
+        }
         schedule.setMonth(scheduleMonth);
 
         schedule.setDayOfMonth(buildScheduleDayOfMonth(dayOfMonth));
