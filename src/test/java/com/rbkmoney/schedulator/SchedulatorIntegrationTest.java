@@ -9,6 +9,7 @@ import com.rbkmoney.schedulator.service.DominantService;
 import com.rbkmoney.schedulator.service.RemoteClientManager;
 import org.apache.thrift.TException;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -18,6 +19,7 @@ import java.nio.ByteBuffer;
 
 import static org.mockito.Mockito.*;
 
+@Ignore
 public class SchedulatorIntegrationTest extends AbstractIntegrationTest {
 
     @MockBean
