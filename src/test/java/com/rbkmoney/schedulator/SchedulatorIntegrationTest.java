@@ -33,8 +33,6 @@ public class SchedulatorIntegrationTest extends AbstractIntegrationTest {
     public void registerAndDeregisterJobTest() throws TException, IOException, InterruptedException {
         ValidationResponseStatus successValidationStatus = new ValidationResponseStatus();
         successValidationStatus.setSuccess(new ValidationSuccess());
-        ValidationResponseStatus failValidationStatus = new ValidationResponseStatus();
-        failValidationStatus.setFailed(new ValidationFailed());
         when(remoteClientManager.validateExecutionContext(anyString(), any(ByteBuffer.class)))
                 .thenReturn(new ContextValidationResponse(successValidationStatus));
         BusinessSchedule businessSchedule = ScheduleTestData.buildSchedule(2020, null, null, null, null, null, null);
