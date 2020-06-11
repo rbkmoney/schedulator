@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.rbkmoney</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.1.1.RELEASE</version>
+        <version>2.3.0.RELEASE-2</version>
     </parent>
 
     <artifactId>schedulator</artifactId>
@@ -26,7 +26,7 @@
         <dockerfile.registry>${env.REGISTRY}</dockerfile.registry>
         <sonar.jacoco.reportPath>${project.basedir}/target/jacoco.exec</sonar.jacoco.reportPath>
         <shared.resources.version>0.3.6</shared.resources.version>
-        <woody-thrift.version>1.1.18</woody-thrift.version>
+        <woody-thrift.version>1.1.20</woody-thrift.version>
         <schedulator-proto.version>1.11-efc08c2</schedulator-proto.version>
         <machinarium.version>0.3.0</machinarium.version>
         <cronutils.version>9.0.1</cronutils.version>

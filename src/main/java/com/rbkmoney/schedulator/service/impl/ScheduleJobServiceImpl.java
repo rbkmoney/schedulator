@@ -58,12 +58,12 @@ public class ScheduleJobServiceImpl implements ScheduleJobService {
             remoteJobContext = callRemoteJob(url, executeJobRequest);
             resultMachineTimerState.setJobRetryCount(0); // Reset retry count
         } catch (RemoteJobExecuteException e) {
-            // Calculate retry execution time
+            log.warn("Job execution failed. Calculate retry execution time", e);
             resultMachineTimerState.setJobRetryCount(resultMachineTimerState.getJobRetryCount() + 1);
+            log.info("Retry count: {}", resultMachineTimerState.getJobRetryCount());
             if (machineTimerState.getJobRetryCount() > jobRetryProperties.getMaxAttempts()) {
-                throw new ScheduleJobCalculateException("Max retry count exceeded");
+                throw new ScheduleJobCalculateException("Max retry count exceeded", e);
             }
-            log.trace("Calculate retry execution time");
             remoteJobContext = ByteBuffer.wrap(scheduleJobRegistered.getContext()); // Set old execution context
 
             RetryJobContext retryJobContext = calculateRetryJobContext(scheduleJobRegistered, machineTimerState);

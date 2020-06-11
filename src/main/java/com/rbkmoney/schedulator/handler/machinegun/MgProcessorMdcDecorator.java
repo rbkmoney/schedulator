@@ -39,7 +39,7 @@ public class MgProcessorMdcDecorator extends AbstractProcessorHandler<ScheduleCh
 
     @Override
     protected SignalResultData<ScheduleChange> processSignalTimeout(TMachine<ScheduleChange> machine,
-                                                                    List<TMachineEvent<ScheduleChange>> machineEvents) {
+                                                                 List<TMachineEvent<ScheduleChange>> machineEvents) {
         try {
             Optional<TMachineEvent<ScheduleChange>> scheduleJobRegisteredEvent = machineEvents.stream()
                     .filter(machineEvent -> machineEvent.getData().isSetScheduleJobRegistered())
