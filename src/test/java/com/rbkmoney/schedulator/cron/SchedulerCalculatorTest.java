@@ -1,8 +1,9 @@
 package com.rbkmoney.schedulator.cron;
 
+import com.rbkmoney.damsel.base.TimeSpan;
+import com.rbkmoney.damsel.domain.BusinessSchedule;
 import com.rbkmoney.damsel.domain.Calendar;
 import com.rbkmoney.schedulator.ScheduleTestData;
-import com.rbkmoney.schedulator.util.SchedulerUtilTest;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -189,5 +190,49 @@ public class SchedulerCalculatorTest {
         Assert.assertEquals(ZonedDateTime.of(2018, 3, 9, 0, 0 ,0, 0, timeZone.toZoneId()), thirdCalc.getNextFireTime());
         Assert.assertEquals(ZonedDateTime.of(2018, 3, 9, 0, 0, 0 ,0, timeZone.toZoneId()), thirdCalc.getNextCronFireTime());
     }
+
+    @Test
+    public void testNewSchedulerCalculatorNoDelay() {
+        BusinessSchedule businessSchedule = ScheduleTestData.buildSchedule(2018, null, null, null, (byte) 0, (byte) 0, (byte) 0);
+        LocalDateTime startTime = LocalDateTime.of(2018, java.time.Month.MARCH, 7, 0, 0, 0);
+        ZonedDateTime starTimeZone = ZonedDateTime.of(startTime, timeZone.toZoneId());
+        SchedulerCalculator schedulerCalculator = SchedulerCalculator.newSchedulerCalculator(starTimeZone, calendar, businessSchedule);
+
+        SchedulerComputeResult firstCalc = schedulerCalculator.computeFireTime();
+        Assert.assertEquals(ZonedDateTime.of(2018, 3, 7, 0, 0 ,0, 0, timeZone.toZoneId()), firstCalc.getNextFireTime());
+        Assert.assertEquals(ZonedDateTime.of(2018, 3, 7, 0, 0, 0 ,0, timeZone.toZoneId()), firstCalc.getNextCronFireTime());
+
+        SchedulerComputeResult secCalc = schedulerCalculator.computeFireTime();
+        Assert.assertEquals(ZonedDateTime.of(2018, 3, 8, 0, 0 ,0, 0, timeZone.toZoneId()), secCalc.getNextFireTime());
+        Assert.assertEquals(ZonedDateTime.of(2018, 3, 8, 0, 0, 0 ,0, timeZone.toZoneId()), secCalc.getNextCronFireTime());
+
+        SchedulerComputeResult thirdCalc = schedulerCalculator.computeFireTime();
+        Assert.assertEquals(ZonedDateTime.of(2018, 3, 9, 0, 0 ,0, 0, timeZone.toZoneId()), thirdCalc.getNextFireTime());
+        Assert.assertEquals(ZonedDateTime.of(2018, 3, 9, 0, 0, 0 ,0, timeZone.toZoneId()), thirdCalc.getNextCronFireTime());
+    }
+
+    @Test
+    public void testNewSchedulerCalculatorWithDelay() {
+        BusinessSchedule businessSchedule = ScheduleTestData.buildSchedule(2018, null, null, null, (byte) 0, (byte) 0, (byte) 0);
+        TimeSpan timeSpan = new TimeSpan();
+        timeSpan.setHours((short) 1);
+        businessSchedule.setDelay(timeSpan);
+        LocalDateTime startTime = LocalDateTime.of(2018, java.time.Month.MARCH, 7, 0, 0, 0);
+        ZonedDateTime starTimeZone = ZonedDateTime.of(startTime, timeZone.toZoneId());
+        SchedulerCalculator schedulerCalculator = SchedulerCalculator.newSchedulerCalculator(starTimeZone, calendar, businessSchedule);
+
+        SchedulerComputeResult firstCalc = schedulerCalculator.computeFireTime();
+        Assert.assertEquals(ZonedDateTime.of(2018, 3, 7, 1, 0 ,0, 0, timeZone.toZoneId()), firstCalc.getNextFireTime());
+        Assert.assertEquals(ZonedDateTime.of(2018, 3, 7, 0, 0, 0 ,0, timeZone.toZoneId()), firstCalc.getNextCronFireTime());
+
+        SchedulerComputeResult secCalc = schedulerCalculator.computeFireTime();
+        Assert.assertEquals(ZonedDateTime.of(2018, 3, 12, 1, 0 ,0, 0, timeZone.toZoneId()), secCalc.getNextFireTime());
+        Assert.assertEquals(ZonedDateTime.of(2018, 3, 12, 0, 0, 0 ,0, timeZone.toZoneId()), secCalc.getNextCronFireTime());
+
+        SchedulerComputeResult thirdCalc = schedulerCalculator.computeFireTime();
+        Assert.assertEquals(ZonedDateTime.of(2018, 3, 13, 1, 0 ,0, 0, timeZone.toZoneId()), thirdCalc.getNextFireTime());
+        Assert.assertEquals(ZonedDateTime.of(2018, 3, 13, 0, 0, 0 ,0, timeZone.toZoneId()), thirdCalc.getNextCronFireTime());
+    }
+
 
 }

@@ -1,7 +1,6 @@
 package com.rbkmoney.schedulator.handler.machinegun;
 
 import com.rbkmoney.damsel.schedule.*;
-import com.rbkmoney.geck.common.util.TypeUtil;
 import com.rbkmoney.machinarium.domain.CallResultData;
 import com.rbkmoney.machinarium.domain.SignalResultData;
 import com.rbkmoney.machinarium.domain.TMachine;
@@ -24,7 +23,6 @@ import org.apache.thrift.TException;
 import org.springframework.stereotype.Component;
 
 import java.nio.ByteBuffer;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
