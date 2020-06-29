@@ -139,12 +139,14 @@ public class SchedulerCalculator {
         LocalDateTime result = dateTime;
         result = result.minusYears(calculatorConfig.getDelayYears());
         result = result.minusMonths(calculatorConfig.getDelayMonths());
-        result = result.with(dateAdjuster.adjust(
-                -calculatorConfig.getDelayDays(),
-                -calculatorConfig.getDelayHours(),
-                -calculatorConfig.getDelayMinutes(),
-                -calculatorConfig.getDelaySeconds())
-        );
+        if (isDateShift()) {
+            result = result.with(dateAdjuster.adjust(
+                    -calculatorConfig.getDelayDays(),
+                    -calculatorConfig.getDelayHours(),
+                    -calculatorConfig.getDelayMinutes(),
+                    -calculatorConfig.getDelaySeconds())
+            );
+        }
 
         return result;
     }
