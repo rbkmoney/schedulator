@@ -10,7 +10,6 @@ import com.rbkmoney.schedulator.cron.SchedulerCalculator;
 import com.rbkmoney.schedulator.cron.SchedulerComputeResult;
 import com.rbkmoney.schedulator.exception.NotFoundException;
 import com.rbkmoney.schedulator.handler.machinegun.RemoteJobExecuteException;
-import com.rbkmoney.schedulator.serializer.MachineStateSerializer;
 import com.rbkmoney.schedulator.serializer.MachineTimerState;
 import com.rbkmoney.schedulator.service.DominantService;
 import com.rbkmoney.schedulator.service.RemoteClientManager;
@@ -57,6 +56,7 @@ public class ScheduleJobServiceImpl implements ScheduleJobService {
         try {
             remoteJobContext = callRemoteJob(url, executeJobRequest);
             resultMachineTimerState.setJobRetryCount(0); // Reset retry count
+            resultMachineTimerState.setCurrentInterval(-1); // Reset current interval
         } catch (RemoteJobExecuteException e) {
             log.warn("Job execution failed. Calculate retry execution time", e);
             resultMachineTimerState.setJobRetryCount(resultMachineTimerState.getJobRetryCount() + 1);
