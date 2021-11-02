@@ -22,8 +22,8 @@ public class DominantServiceImpl implements DominantService {
     private final RetryTemplate retryTemplate;
 
     @Override
-    public BusinessSchedule getBusinessSchedule(BusinessScheduleRef scheduleRef, long domainRevision) {
-        Reference revisionReference = Reference.version(domainRevision);
+    public BusinessSchedule getBusinessSchedule(BusinessScheduleRef scheduleRef, Long domainRevision) {
+        Reference revisionReference = domainRevision != null ? Reference.version(domainRevision) : Reference.head(new Head());
         log.debug("Trying to get schedule, scheduleRef='{}', revisionReference='{}'", scheduleRef, revisionReference);
         try {
             com.rbkmoney.damsel.domain.Reference reference = new com.rbkmoney.damsel.domain.Reference();
@@ -40,8 +40,8 @@ public class DominantServiceImpl implements DominantService {
     }
 
     @Override
-    public Calendar getCalendar(CalendarRef calendarRef, long domainRevision) {
-        Reference revisionReference = Reference.version(domainRevision);
+    public Calendar getCalendar(CalendarRef calendarRef, Long domainRevision) {
+        Reference revisionReference = domainRevision != null ? Reference.version(domainRevision) : Reference.head(new Head());
         log.debug("Trying to get calendar, calendarRef='{}', revisionReference='{}'", calendarRef, revisionReference);
         try {
             com.rbkmoney.damsel.domain.Reference reference = new com.rbkmoney.damsel.domain.Reference();

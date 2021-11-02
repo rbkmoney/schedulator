@@ -21,12 +21,12 @@ public class CacheDominantService implements DominantService {
     private final DominantServiceImpl dominantService;
 
     @Override
-    public BusinessSchedule getBusinessSchedule(BusinessScheduleRef scheduleRef, long domainRevision) throws NotFoundException {
+    public BusinessSchedule getBusinessSchedule(BusinessScheduleRef scheduleRef, Long domainRevision) throws NotFoundException {
         return dominantService.getBusinessSchedule(scheduleRef, domainRevision);
     }
 
     @Override
-    public Calendar getCalendar(CalendarRef calendarRef, long domainRevision) throws NotFoundException {
+    public Calendar getCalendar(CalendarRef calendarRef, Long domainRevision) throws NotFoundException {
         long key = calendarRef.getId() + domainRevision;
         return dominantCache.get(key, s -> dominantService.getCalendar(calendarRef, domainRevision));
     }
