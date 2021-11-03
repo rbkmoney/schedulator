@@ -112,7 +112,8 @@ public class ScheduleJobServiceImpl implements ScheduleJobService {
                                                      MachineTimerState timerState) {
         DominantBasedSchedule dominantSchedule = scheduleJobRegistered.getSchedule().getDominantSchedule();
         try {
-            Calendar calendar = dominantService.getCalendar(dominantSchedule.getCalendarRef(), dominantSchedule.getRevision());
+            Calendar calendar = dominantService.getCalendar(
+                    dominantSchedule.getCalendarRef(), dominantSchedule.isSetRevision() ? dominantSchedule.getRevision() : null);
             TimeZone timeZone = TimeZone.getTimeZone(calendar.getTimezone());
 
             JobExponentialBackOff backOff = new JobExponentialBackOff(
