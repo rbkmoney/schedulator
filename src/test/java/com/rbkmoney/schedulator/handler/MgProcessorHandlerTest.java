@@ -66,7 +66,8 @@ public class MgProcessorHandlerTest {
                 .setNextCronTime("testCron")
                 .setNextFireTime(NEXT_FIRE_TIME)
                 .setPrevFireTime("215426536");
-        doReturn(scheduledJobContext).when(scheduleJobService).calculateScheduledJobContext(any(ScheduleJobRegistered.class));
+        doReturn(scheduledJobContext)
+                .when(scheduleJobService).calculateScheduledJobContext(any(ScheduleJobRegistered.class));
 
         ScheduledJobExecutorSrv.Iface jobExecutorMock = mock(ScheduledJobExecutorSrv.Iface.class);
         ContextValidationResponse validationResponse = new ContextValidationResponse();
@@ -76,9 +77,11 @@ public class MgProcessorHandlerTest {
         when(jobExecutorMock.validateExecutionContext(any(ByteBuffer.class))).thenReturn(validationResponse);
         when(jobExecutorMock.executeJob(any(ExecuteJobRequest.class))).thenReturn(ByteBuffer.wrap(new byte[0]));
         when(remoteClientManagerMock.getRemoteClient(anyString())).thenReturn(jobExecutorMock);
-        when(remoteClientManagerMock.validateExecutionContext(anyString(), any(ByteBuffer.class))).thenReturn(validationResponse);
+        when(remoteClientManagerMock.validateExecutionContext(anyString(), any(ByteBuffer.class)))
+                .thenReturn(validationResponse);
 
-        BusinessSchedule schedule = ScheduleTestData.buildSchedule(2018, Month.Apr, (byte) 4, DayOfWeek.Fri, (byte) 7, null, null);
+        BusinessSchedule schedule = ScheduleTestData.buildSchedule(2018, Month.Apr, (byte) 4, DayOfWeek.Fri,
+                (byte) 7, null, null);
 
         when(dominantServiceMock.getBusinessSchedule(any(BusinessScheduleRef.class), anyLong())).thenReturn(schedule);
 
@@ -92,7 +95,8 @@ public class MgProcessorHandlerTest {
         SignalArgs signalInit = buildSignalInit();
         SignalResult signalResult = mgProcessorHandler.processSignal(signalInit);
 
-        Assert.assertEquals("Machine events should be equal to '2'", 2, signalResult.getChange().getEvents().size());
+        Assert.assertEquals("Machine events should be equal to '2'", 2,
+                signalResult.getChange().getEvents().size());
         Assert.assertTrue("Machine action should be 'timerAction'", signalResult.getAction().isSetTimer());
     }
 
@@ -101,9 +105,11 @@ public class MgProcessorHandlerTest {
         SignalArgs signalTimeoutRegister = buildSignalTimeoutRegister();
         SignalResult signalResult = mgProcessorHandler.processSignal(signalTimeoutRegister);
 
-        Assert.assertEquals("Machine events should be equal to '1'", 1, signalResult.getChange().getEvents().size());
+        Assert.assertEquals("Machine events should be equal to '1'", 1,
+                signalResult.getChange().getEvents().size());
         Assert.assertTrue("Machine action should be 'timerAction'", signalResult.getAction().isSetTimer());
-        Assert.assertEquals("Range limit should be '1'", 1, signalResult.getAction().getTimer().getSetTimer().getRange().getLimit());
+        Assert.assertEquals("Range limit should be '1'", 1,
+                signalResult.getAction().getTimer().getSetTimer().getRange().getLimit());
     }
 
     @Test
@@ -111,7 +117,8 @@ public class MgProcessorHandlerTest {
         SignalArgs signalTimeout = buildSignalTimeoutDeregister();
         SignalResult signalResult = mgProcessorHandler.processSignal(signalTimeout);
 
-        Assert.assertEquals("Machine events should be equal to '1'", 1, signalResult.getChange().getEvents().size());
+        Assert.assertEquals("Machine events should be equal to '1'", 1,
+                signalResult.getChange().getEvents().size());
         Assert.assertTrue("Machine action should be 'removeAction'", signalResult.getAction().isSetRemove());
     }
 
@@ -158,17 +165,23 @@ public class MgProcessorHandlerTest {
 
         Content content = signalTimeoutRegisterResult.getChange().getEvents().get(0);
         ScheduleChange scheduleChange = Geck.msgPackToTBase(content.getData().getBin(), ScheduleChange.class);
-        SignalArgs signalTimeoutExecutedFirst = buildSignalTimeoutExecuted(signalTimeoutRegisterResult.getChange().getAuxState(), scheduleChange);
+        SignalArgs signalTimeoutExecutedFirst =
+                buildSignalTimeoutExecuted(signalTimeoutRegisterResult.getChange().getAuxState(), scheduleChange);
         SignalResult signalTimeoutExecutedResult = mgProcessorHandler.processSignal(signalTimeoutExecutedFirst);
-        Assert.assertTrue("Machine action should be 'timerAction'", signalTimeoutExecutedResult.getAction().isSetTimer());
+        Assert.assertTrue("Machine action should be 'timerAction'",
+                signalTimeoutExecutedResult.getAction().isSetTimer());
 
-        SignalArgs signalTimeoutExecutedSecond = buildSignalTimeoutExecuted(signalTimeoutExecutedResult.getChange().getAuxState(), scheduleChange);
+        SignalArgs signalTimeoutExecutedSecond =
+                buildSignalTimeoutExecuted(signalTimeoutExecutedResult.getChange().getAuxState(), scheduleChange);
         SignalResult signalTimeoutExecutedResultSecond = mgProcessorHandler.processSignal(signalTimeoutExecutedSecond);
-        Assert.assertTrue("Machine action should be 'timerAction'", signalTimeoutExecutedResultSecond.getAction().isSetTimer());
+        Assert.assertTrue("Machine action should be 'timerAction'",
+                signalTimeoutExecutedResultSecond.getAction().isSetTimer());
 
-        SignalArgs signalTimeoutExecutedThird = buildSignalTimeoutExecuted(signalTimeoutExecutedResultSecond.getChange().getAuxState(), scheduleChange);
+        SignalArgs signalTimeoutExecutedThird =
+                buildSignalTimeoutExecuted(signalTimeoutExecutedResultSecond.getChange().getAuxState(), scheduleChange);
         SignalResult signalTimeoutExecutedResultThird = mgProcessorHandler.processSignal(signalTimeoutExecutedThird);
-        Assert.assertTrue("Machine action should be 'timerAction'", signalTimeoutExecutedResultThird.getAction().isSetTimer());
+        Assert.assertTrue("Machine action should be 'timerAction'",
+                signalTimeoutExecutedResultThird.getAction().isSetTimer());
 
         Timer firstTimer = signalTimeoutExecutedResult.getAction().getTimer().getSetTimer().getTimer();
         Timer secondTimer = signalTimeoutExecutedResultSecond.getAction().getTimer().getSetTimer().getTimer();
@@ -185,7 +198,8 @@ public class MgProcessorHandlerTest {
         Assert.assertTrue(secondDuration > 0);
 
         long prevDuration = secondDuration / 2;
-        Assert.assertEquals("Duration of the second signal should be twice as long as the first", prevDuration, firstDuration);
+        Assert.assertEquals("Duration of the second signal should be twice as long as the first",
+                prevDuration, firstDuration);
     }
 
     @Test(expected = WUndefinedResultException.class)
@@ -203,7 +217,8 @@ public class MgProcessorHandlerTest {
             if (signalResult != null) {
                 signalArgs = buildSignalTimeoutExecuted(signalResult.getChange().getAuxState(), scheduleChange);
             } else {
-                signalArgs = buildSignalTimeoutExecuted(signalTimeoutRegisterResult.getChange().getAuxState(), scheduleChange);
+                signalArgs = buildSignalTimeoutExecuted(signalTimeoutRegisterResult.getChange().getAuxState(),
+                        scheduleChange);
 
             }
             signalResult = mgProcessorHandler.processSignal(signalArgs);
@@ -250,15 +265,17 @@ public class MgProcessorHandlerTest {
         signalTimeoutRegister.getMachine().setAuxState(new Content(Value.bin(state)));
         SignalResult signalResult = mgProcessorHandler.processSignal(signalTimeoutRegister);
 
-        SchedulatorMachineState machineState = machineStateSerializer.deserializer(signalResult.getChange().getAuxState().getData().getBin());
+        SchedulatorMachineState machineState =
+                machineStateSerializer.deserializer(signalResult.getChange().getAuxState().getData().getBin());
 
         Assert.assertEquals(scheduleChange.getScheduleJobRegistered().getExecutorServicePath(),
                 machineState.getRegisterState().getExecutorServicePath());
-        Assert.assertEquals(scheduleChange.getScheduleJobRegistered().getSchedule().getDominantSchedule().getRevision(),
+        var dominantSchedule = scheduleChange.getScheduleJobRegistered().getSchedule().getDominantSchedule();
+        Assert.assertEquals(dominantSchedule.getRevision(),
                 (long) machineState.getRegisterState().getDominantRevisionId());
-        Assert.assertEquals(scheduleChange.getScheduleJobRegistered().getSchedule().getDominantSchedule().getCalendarRef().getId(),
+        Assert.assertEquals(dominantSchedule.getCalendarRef().getId(),
                 (long) machineState.getRegisterState().getCalendarId());
-        Assert.assertEquals(scheduleChange.getScheduleJobRegistered().getSchedule().getDominantSchedule().getBusinessScheduleRef().getId(),
+        Assert.assertEquals(dominantSchedule.getBusinessScheduleRef().getId(),
                 (int) machineState.getRegisterState().getBusinessSchedulerId());
         Assert.assertEquals(new String(scheduleChange.getScheduleJobRegistered().getContext()),
                 new String(machineState.getRegisterState().getContext().getBytes()));
@@ -268,7 +285,8 @@ public class MgProcessorHandlerTest {
         ScheduleJobRegistered scheduleJobRegistered = buildScheduleJobRegister();
         ScheduleChange registerScheduleChange = ScheduleChange.schedule_job_registered(scheduleJobRegistered);
 
-        Event registerEvent = new Event(1L, Instant.now().toString(), Value.bin(Geck.toMsgPack(registerScheduleChange)));
+        Event registerEvent = new Event(1L, Instant.now().toString(),
+                Value.bin(Geck.toMsgPack(registerScheduleChange)));
 
         return new SignalArgs()
                 .setSignal(Signal.timeout(new TimeoutSignal()))
@@ -282,9 +300,9 @@ public class MgProcessorHandlerTest {
     }
 
     private SignalArgs buildSignalTimeoutDeregister() {
-        ScheduleChange scheduleChangeDeregister = ScheduleChange.schedule_job_deregistered(new ScheduleJobDeregistered());
+        ScheduleChange jobDeregistered = ScheduleChange.schedule_job_deregistered(new ScheduleJobDeregistered());
 
-        Event deregisterEvent = new Event(1L, Instant.now().toString(), Value.bin(Geck.toMsgPack(scheduleChangeDeregister)));
+        Event deregisterEvent = new Event(1L, Instant.now().toString(), Value.bin(Geck.toMsgPack(jobDeregistered)));
 
         return new SignalArgs()
                 .setSignal(Signal.timeout(new TimeoutSignal()))

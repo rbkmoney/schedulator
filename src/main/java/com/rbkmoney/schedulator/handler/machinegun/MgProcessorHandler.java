@@ -51,23 +51,25 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
     }
 
     @Override
-    public final SignalResultData<ScheduleChange> processSignalInit(TMachine machine, ScheduleChange scheduleChangeRegistered) {
-        log.info("Request processSignalInit() machineId: {} scheduleChangeRegistered: {}", machine.getMachineId(), scheduleChangeRegistered);
-        ScheduleJobRegistered scheduleJobRegistered = scheduleChangeRegistered.getScheduleJobRegistered();
+    public final SignalResultData<ScheduleChange> processSignalInit(TMachine machine,
+                                                                    ScheduleChange scheduleChangeRegistered) {
+        log.info("Request processSignalInit() machineId: {} scheduleChangeRegistered: {}",
+                machine.getMachineId(), scheduleChangeRegistered);
+        ScheduleJobRegistered jobRegistered = scheduleChangeRegistered.getScheduleJobRegistered();
 
         // Validate execution context (call remote service)
-        ScheduleContextValidated scheduleContextValidated = validateRemoteContext(scheduleJobRegistered);
+        ScheduleContextValidated scheduleContextValidated = validateRemoteContext(jobRegistered);
 
         // Calculate next execution time
         try {
-            ScheduleChange scheduleChangeValidated = ScheduleChange.schedule_context_validated(scheduleContextValidated);
-            ScheduledJobContext scheduledJobContext = scheduleJobService.calculateScheduledJobContext(scheduleJobRegistered);
+            ScheduleChange changeValidated = ScheduleChange.schedule_context_validated(scheduleContextValidated);
+            ScheduledJobContext context = scheduleJobService.calculateScheduledJobContext(jobRegistered);
             HistoryRange historyRange = TimerActionHelper.buildLastEventHistoryRange();
-            ComplexAction complexAction = TimerActionHelper.buildTimerAction(scheduledJobContext.getNextFireTime(), historyRange);
+            ComplexAction complexAction = TimerActionHelper.buildTimerAction(context.getNextFireTime(), historyRange);
             log.info("[Signal Init] timer action: {}", complexAction);
             SignalResultData<ScheduleChange> signalResultData = new SignalResultData<>(
                     Value.nl(new Nil()),
-                    Arrays.asList(scheduleChangeValidated, scheduleChangeRegistered),
+                    Arrays.asList(changeValidated, scheduleChangeRegistered),
                     complexAction);
             log.info("Response of processSignalInit: {}", signalResultData);
 
@@ -79,15 +81,17 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
     }
 
     @Override
-    public final SignalResultData<ScheduleChange> processSignalTimeout(TMachine<ScheduleChange> machine,
-                                                                       List<TMachineEvent<ScheduleChange>> machineEventList) {
+    public final SignalResultData<ScheduleChange> processSignalTimeout(
+            TMachine<ScheduleChange> machine,
+            List<TMachineEvent<ScheduleChange>> machineEventList) {
         try {
             if (machineEventList.isEmpty()) {
                 throw new MachineEventHandleException("Machine events can't be empty");
             }
             TMachineEvent<ScheduleChange> machineEvent = machineEventList.get(0); // Expect only one event
 
-            log.info("Request processSignalTimeout() machineId: {} machineEventList: {}", machine.getMachineId(), machineEventList);
+            log.info("Request processSignalTimeout() machineId: {} machineEventList: {}",
+                    machine.getMachineId(), machineEventList);
 
             return machineEventProcessor.process(machine, machineEvent);
         } catch (MachineEventHandleException e) {
@@ -101,7 +105,8 @@ public class MgProcessorHandler extends AbstractProcessorHandler<ScheduleChange,
                                                             String machineId,
                                                             ScheduleChange scheduleChange,
                                                             List<TMachineEvent<ScheduleChange>> machineEvents) {
-        log.info("Request processCall() machineId: {} scheduleChange: {} machineEvents: {}", machineId, scheduleChange, machineEvents);
+        log.info("Request processCall() machineId: {} scheduleChange: {} machineEvents: {}",
+                machineId, scheduleChange, machineEvents);
         ComplexAction removeAction = TimerActionHelper.buildRemoveAction();
         CallResultData<ScheduleChange> callResultData = new CallResultData<>(
                 Value.nl(new Nil()),

@@ -42,15 +42,16 @@ public class SchedulatorHandlerTest {
 
         schedulator.registerJob("64", registerJobRequest);
 
-        ScheduleChange scheduleChange = scheduleChangeArgumentCaptor.getValue();
+        ScheduleChange change = scheduleChangeArgumentCaptor.getValue();
 
-        Assert.assertEquals(registerJobRequest.getExecutorServicePath(), scheduleChange.getScheduleJobRegistered().getExecutorServicePath());
+        Assert.assertEquals(registerJobRequest.getExecutorServicePath(),
+                change.getScheduleJobRegistered().getExecutorServicePath());
         Assert.assertEquals(registerJobRequest.getSchedule().getDominantSchedule().getRevision(),
-                scheduleChange.getScheduleJobRegistered().getSchedule().getDominantSchedule().getRevision());
+                change.getScheduleJobRegistered().getSchedule().getDominantSchedule().getRevision());
         Assert.assertEquals(registerJobRequest.getSchedule().getDominantSchedule().getBusinessScheduleRef().getId(),
-                scheduleChange.getScheduleJobRegistered().getSchedule().getDominantSchedule().getBusinessScheduleRef().getId());
+                change.getScheduleJobRegistered().getSchedule().getDominantSchedule().getBusinessScheduleRef().getId());
         Assert.assertEquals(registerJobRequest.getSchedule().getDominantSchedule().getCalendarRef().getId(),
-                scheduleChange.getScheduleJobRegistered().getSchedule().getDominantSchedule().getCalendarRef().getId());
+                change.getScheduleJobRegistered().getSchedule().getDominantSchedule().getCalendarRef().getId());
     }
 
     @Test(expected = IllegalStateException.class)

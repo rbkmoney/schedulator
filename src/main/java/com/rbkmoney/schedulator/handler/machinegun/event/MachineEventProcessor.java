@@ -6,5 +6,6 @@ import com.rbkmoney.machinarium.domain.TMachine;
 import com.rbkmoney.machinarium.domain.TMachineEvent;
 
 public interface MachineEventProcessor {
-    SignalResultData<ScheduleChange> process(TMachine<ScheduleChange> machine, TMachineEvent<ScheduleChange> machineEvent);
+    SignalResultData<ScheduleChange> process(TMachine<ScheduleChange> machine,
+                                             TMachineEvent<ScheduleChange> machineEvent);
 }

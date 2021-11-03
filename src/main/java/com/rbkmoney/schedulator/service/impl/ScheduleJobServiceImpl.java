@@ -85,9 +85,11 @@ public class ScheduleJobServiceImpl implements ScheduleJobService {
         try {
             log.debug("Get scheduler job context from dominant: {}", dominantSchedule);
             BusinessSchedule businessSchedule = dominantService.getBusinessSchedule(
-                    dominantSchedule.getBusinessScheduleRef(), dominantSchedule.isSetRevision() ? dominantSchedule.getRevision() : null);
+                    dominantSchedule.getBusinessScheduleRef(),
+                    dominantSchedule.isSetRevision() ? dominantSchedule.getRevision() : null);
             Calendar calendar = dominantService.getCalendar(
-                    dominantSchedule.getCalendarRef(), dominantSchedule.isSetRevision() ? dominantSchedule.getRevision() : null);
+                    dominantSchedule.getCalendarRef(),
+                    dominantSchedule.isSetRevision() ? dominantSchedule.getRevision() : null);
 
             TimeZone timeZone = TimeZone.getTimeZone(calendar.getTimezone());
             SchedulerCalculator schedulerCalculator = SchedulerCalculator.newSchedulerCalculator(
@@ -113,7 +115,8 @@ public class ScheduleJobServiceImpl implements ScheduleJobService {
         DominantBasedSchedule dominantSchedule = scheduleJobRegistered.getSchedule().getDominantSchedule();
         try {
             Calendar calendar = dominantService.getCalendar(
-                    dominantSchedule.getCalendarRef(), dominantSchedule.isSetRevision() ? dominantSchedule.getRevision() : null);
+                    dominantSchedule.getCalendarRef(),
+                    dominantSchedule.isSetRevision() ? dominantSchedule.getRevision() : null);
             TimeZone timeZone = TimeZone.getTimeZone(calendar.getTimezone());
 
             JobExponentialBackOff backOff = new JobExponentialBackOff(

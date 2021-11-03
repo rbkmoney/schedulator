@@ -26,7 +26,8 @@ public class MgProcessorMdcDecorator extends AbstractProcessorHandler<ScheduleCh
     }
 
     @Override
-    protected SignalResultData<ScheduleChange> processSignalInit(TMachine<ScheduleChange> machine, ScheduleChange args) {
+    protected SignalResultData<ScheduleChange> processSignalInit(TMachine<ScheduleChange> machine,
+                                                                 ScheduleChange args) {
         try {
             if (args.isSetScheduleJobRegistered()) {
                 MDC.put(MACHINE_ID, args.getScheduleJobRegistered().getScheduleId());
@@ -45,7 +46,7 @@ public class MgProcessorMdcDecorator extends AbstractProcessorHandler<ScheduleCh
                     .filter(machineEvent -> machineEvent.getData().isSetScheduleJobRegistered())
                     .findFirst();
             if (scheduleJobRegisteredEvent.isPresent()) {
-                ScheduleJobRegistered scheduleJobRegistered = scheduleJobRegisteredEvent.get().getData().getScheduleJobRegistered();
+                var scheduleJobRegistered = scheduleJobRegisteredEvent.get().getData().getScheduleJobRegistered();
                 MDC.put(MACHINE_ID, scheduleJobRegistered.getScheduleId());
             }
             return mgProcessorHandler.processSignalTimeout(machine, machineEvents);

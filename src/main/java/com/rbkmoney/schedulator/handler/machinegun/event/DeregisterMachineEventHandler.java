@@ -23,9 +23,9 @@ public class DeregisterMachineEventHandler implements MachineEventHandler {
         log.info("Process job deregister event for machineId: {}", machine.getMachineId());
         ComplexAction removeAction = TimerActionHelper.buildRemoveAction();
 
-        ScheduleChange scheduleJobDeregistered = ScheduleChange.schedule_job_deregistered(new ScheduleJobDeregistered());
+        ScheduleChange jobDeregistered = ScheduleChange.schedule_job_deregistered(new ScheduleJobDeregistered());
 
-        return new SignalResultData<>(Value.nl(new Nil()), List.of(scheduleJobDeregistered), removeAction);
+        return new SignalResultData<>(Value.nl(new Nil()), List.of(jobDeregistered), removeAction);
     }
 
     @Override

@@ -46,7 +46,8 @@ public class SchedulerUtilTest {
 
     @Test
     public void findNearestCronTest() {
-        List<String> cronExpressionList = List.of("0 0 12 ? * TUE *", "0 0 12 ? * MON *", "0 0 12 ? * WED *", "0 0 12 ? * THU *");
+        List<String> cronExpressionList =
+                List.of("0 0 12 ? * TUE *", "0 0 12 ? * MON *", "0 0 12 ? * WED *", "0 0 12 ? * THU *");
         ZonedDateTime dateTime = ZonedDateTime.of(2019, 11, 10, 9, 0, 0, 0, ZoneId.of(calendar.getTimezone()));
         String nearestCron = SchedulerUtil.getNearestCron(cronExpressionList, dateTime);
         Assert.assertEquals("0 0 12 ? * MON *", nearestCron);
@@ -172,7 +173,7 @@ public class SchedulerUtilTest {
     }
 
     @Test
-    public void testDOWToQuartzFormat() {
+    public void testToQuartzFormat() {
         Schedule schedule = new Schedule(
                 ScheduleYear.every(new ScheduleEvery()),
                 ScheduleMonth.every(new ScheduleEvery()),
@@ -183,11 +184,13 @@ public class SchedulerUtilTest {
                 ScheduleFragment.every(new ScheduleEvery())
         );
 
-        List<String> cronList = SchedulerUtil.buildCron(schedule, Optional.ofNullable(com.rbkmoney.damsel.base.DayOfWeek.Tue));
+        List<String> cronList = SchedulerUtil.buildCron(schedule,
+                Optional.ofNullable(com.rbkmoney.damsel.base.DayOfWeek.Tue));
         assertEquals(1, cronList.size());
         assertEquals("* * * ? * 1,5,7 *", cronList.get(0));
 
-        cronList = SchedulerUtil.buildCron(schedule, Optional.ofNullable(com.rbkmoney.damsel.base.DayOfWeek.Mon));
+        cronList = SchedulerUtil.buildCron(schedule,
+                Optional.ofNullable(com.rbkmoney.damsel.base.DayOfWeek.Mon));
         assertEquals(1, cronList.size());
         assertEquals("* * * ? * 1,2,6 *", cronList.get(0));
     }

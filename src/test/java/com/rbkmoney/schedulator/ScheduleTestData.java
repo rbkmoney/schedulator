@@ -24,7 +24,8 @@ public class ScheduleTestData {
         RegisterJobRequest registerJobRequest = new RegisterJobRequest();
         registerJobRequest.setContext(ByteBuffer.wrap(new byte[]{}));
         registerJobRequest.setExecutorServicePath("testUrl");
-        registerJobRequest.setSchedule(com.rbkmoney.damsel.schedule.Schedule.dominant_schedule(buildDominantSchedule()));
+        registerJobRequest.setSchedule(
+                com.rbkmoney.damsel.schedule.Schedule.dominant_schedule(buildDominantSchedule()));
 
         return registerJobRequest;
     }
@@ -58,8 +59,9 @@ public class ScheduleTestData {
 
                 for (Month month : Month.values()) {
                     for (String day : row[month.getValue()].split(",")) {
-                        if (day.endsWith("*")) continue; // Ignore short work day
-
+                        if (day.endsWith("*")) {
+                            continue;
+                        } // Ignore short work day
                         CalendarHoliday holiday = new CalendarHoliday();
                         holiday.setName("holiday");
                         holiday.setDay(Byte.parseByte(day));

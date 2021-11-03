@@ -20,7 +20,8 @@ public class SchedulatorHandler implements SchedulatorSrv.Iface {
     private final AutomatonClient<ScheduleChange, ScheduleChange> automatonClient;
 
     @Override
-    public void registerJob(String scheduleId, RegisterJobRequest registerJobRequest) throws ScheduleAlreadyExists, BadContextProvided, TException {
+    public void registerJob(String scheduleId, RegisterJobRequest registerJobRequest)
+            throws ScheduleAlreadyExists, BadContextProvided, TException {
         log.info("Register job started: scheduleId {}, registerJobRequest {}", scheduleId, registerJobRequest);
         ScheduleJobRegistered jobRegistered = new ScheduleJobRegistered()
                 .setScheduleId(scheduleId)
@@ -46,7 +47,8 @@ public class SchedulatorHandler implements SchedulatorSrv.Iface {
         List<TMachineEvent<ScheduleChange>> events = automatonClient.getEvents(scheduleId);
         log.info("ScheduleId '{}' events size: {}", scheduleId, events.size());
         if (!isScheduleContextValidated(events)) {
-            throw new IllegalStateException(String.format("Incorrect state of machine %s. Events: %s", scheduleId, events));
+            throw new IllegalStateException(
+                    String.format("Incorrect state of machine %s. Events: %s", scheduleId, events));
         }
 
         ScheduleContextValidated schedulerContextValidated = findSchedulerContextValidated(events);

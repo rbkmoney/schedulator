@@ -44,9 +44,6 @@ public class JobRegisteredMachineEventHandler implements MachineEventHandler {
                     scheduleJobService.calculateNextExecutionTime(scheduleJobRegistered, null);
 
             // Build timeout signal result
-            ScheduleChange scheduleChange = ScheduleChange.schedule_job_executed(
-                    new ScheduleJobExecuted(scheduleJobCalculateResult.getExecuteJobRequest(), scheduleJobCalculateResult.getRemoteJobContext())
-            );
             ScheduledJobContext scheduledJobContext = scheduleJobCalculateResult.getScheduledJobContext();
             HistoryRange historyRange = TimerActionHelper.buildLastEventHistoryRange();
             ComplexAction complexAction = TimerActionHelper.buildTimerAction(
@@ -60,6 +57,10 @@ public class JobRegisteredMachineEventHandler implements MachineEventHandler {
 
             log.info("Schedulator machine state: {}", schedulatorMachineState);
 
+            ScheduleChange scheduleChange = ScheduleChange.schedule_job_executed(
+                    new ScheduleJobExecuted(scheduleJobCalculateResult.getExecuteJobRequest(),
+                            scheduleJobCalculateResult.getRemoteJobContext())
+            );
             SignalResultData<ScheduleChange> signalResultData = new SignalResultData<>(
                     Value.bin(state),
                     Collections.singletonList(scheduleChange),

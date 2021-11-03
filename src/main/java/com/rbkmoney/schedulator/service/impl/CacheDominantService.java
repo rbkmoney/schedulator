@@ -21,7 +21,8 @@ public class CacheDominantService implements DominantService {
     private final DominantServiceImpl dominantService;
 
     @Override
-    public BusinessSchedule getBusinessSchedule(BusinessScheduleRef scheduleRef, Long domainRevision) throws NotFoundException {
+    public BusinessSchedule getBusinessSchedule(BusinessScheduleRef scheduleRef, Long domainRevision)
+            throws NotFoundException {
         return dominantService.getBusinessSchedule(scheduleRef, domainRevision);
     }
 

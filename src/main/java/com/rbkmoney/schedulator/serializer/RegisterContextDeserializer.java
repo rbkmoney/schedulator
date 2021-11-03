@@ -16,7 +16,7 @@ public class RegisterContextDeserializer extends StdDeserializer<RegisterContext
     }
 
     @Override
-    public RegisterContext deserialize(JsonParser p, DeserializationContext ctx) throws IOException, JsonProcessingException {
+    public RegisterContext deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
         JsonNode node = p.getCodec().readTree(p);
         String base64 = node.asText();
         return new RegisterContext(Base64.getDecoder().decode(base64));

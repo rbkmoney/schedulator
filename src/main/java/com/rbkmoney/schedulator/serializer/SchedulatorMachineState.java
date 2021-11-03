@@ -15,14 +15,15 @@ public class SchedulatorMachineState {
     private MachineTimerState timerState;
 
     public SchedulatorMachineState(ScheduleJobRegistered scheduleJobRegistered) {
-        MachineRegisterState machineRegisterState = new MachineRegisterState();
-        machineRegisterState.setContext(new RegisterContext(scheduleJobRegistered.getContext()));
-        machineRegisterState.setExecutorServicePath(scheduleJobRegistered.getExecutorServicePath());
-        machineRegisterState.setSchedulerId(scheduleJobRegistered.getScheduleId());
-        machineRegisterState.setDominantRevisionId(scheduleJobRegistered.getSchedule().getDominantSchedule().getRevision());
-        machineRegisterState.setBusinessSchedulerId(scheduleJobRegistered.getSchedule().getDominantSchedule().getBusinessScheduleRef().getId());
-        machineRegisterState.setCalendarId(scheduleJobRegistered.getSchedule().getDominantSchedule().getCalendarRef().getId());
-        this.registerState = machineRegisterState;
+        MachineRegisterState registerState = new MachineRegisterState();
+        registerState.setContext(new RegisterContext(scheduleJobRegistered.getContext()));
+        registerState.setExecutorServicePath(scheduleJobRegistered.getExecutorServicePath());
+        registerState.setSchedulerId(scheduleJobRegistered.getScheduleId());
+        registerState.setDominantRevisionId(scheduleJobRegistered.getSchedule().getDominantSchedule().getRevision());
+        registerState.setBusinessSchedulerId(
+                scheduleJobRegistered.getSchedule().getDominantSchedule().getBusinessScheduleRef().getId());
+        registerState.setCalendarId(scheduleJobRegistered.getSchedule().getDominantSchedule().getCalendarRef().getId());
+        this.registerState = registerState;
     }
 
 }

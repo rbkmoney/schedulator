@@ -9,14 +9,10 @@ import lombok.RequiredArgsConstructor;
 public class TimerActionHelper {
 
     public static ComplexAction buildTimerAction(String deadline, HistoryRange historyRange) {
-        ComplexAction complexAction = new ComplexAction();
-        TimerAction timer = new TimerAction();
-        SetTimerAction setTimerAction = new SetTimerAction();
-        setTimerAction.setTimer(Timer.deadline(deadline));
-        setTimerAction.setRange(historyRange);
-        timer.setSetTimer(setTimerAction);
-        complexAction.setTimer(timer);
-        return complexAction;
+        return new ComplexAction()
+                .setTimer(TimerAction.set_timer(new SetTimerAction()
+                        .setTimer(Timer.deadline(deadline))
+                        .setRange(historyRange)));
     }
 
     public static ComplexAction buildRemoveAction() {

@@ -38,7 +38,8 @@ public class SchedulatorIntegrationTest extends AbstractIntegrationTest {
         when(remoteClientManager.validateExecutionContext(anyString(), any(ByteBuffer.class)))
                 .thenReturn(new ContextValidationResponse(successValidationStatus));
         BusinessSchedule businessSchedule = ScheduleTestData.buildSchedule(2020, null, null, null, null, null, null);
-        when(dominantService.getBusinessSchedule(any(BusinessScheduleRef.class), anyLong())).thenReturn(businessSchedule);
+        when(dominantService.getBusinessSchedule(any(BusinessScheduleRef.class), anyLong()))
+                .thenReturn(businessSchedule);
         Calendar calendar = ScheduleTestData.buildTestCalendar();
         when(dominantService.getCalendar(any(CalendarRef.class), anyLong())).thenReturn(calendar);
 

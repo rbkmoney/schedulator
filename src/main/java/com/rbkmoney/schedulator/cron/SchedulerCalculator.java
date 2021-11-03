@@ -2,7 +2,6 @@ package com.rbkmoney.schedulator.cron;
 
 import com.cronutils.model.Cron;
 import com.cronutils.model.time.ExecutionTime;
-import com.google.common.base.Preconditions;
 import com.rbkmoney.damsel.base.ScheduleYear;
 import com.rbkmoney.damsel.domain.BusinessSchedule;
 import com.rbkmoney.damsel.domain.Calendar;
@@ -14,6 +13,7 @@ import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TimeZone;
 
@@ -34,16 +34,19 @@ public class SchedulerCalculator {
     SchedulerCalculator(String cronExpression,
                         Calendar calendar,
                         SchedulerCalculatorConfig calculatorConfig) {
-        Preconditions.checkNotNull(cronExpression, "cronExpression can't be null");
-        Preconditions.checkNotNull(calculatorConfig.getStartTime(), "startTime can't be null");
+        Objects.requireNonNull(cronExpression, "cronExpression can't be null");
+        Objects.requireNonNull(calculatorConfig.getStartTime(), "startTime can't be null");
         this.cron = SchedulerUtil.QUARTZ_CRON_PARSER.parse(cronExpression).validate();
         this.calculatorConfig = calculatorConfig;
         this.dateAdjuster = new ExcludeHolidayAdjuster(calendar, calculatorConfig.getCalendarYear());
         this.timeZone = TimeZone.getTimeZone(calendar.getTimezone());
     }
 
-    public static SchedulerCalculator newSchedulerCalculator(ZonedDateTime startDateTime, Calendar calendar, BusinessSchedule schedule) {
-        List<String> cronList = SchedulerUtil.buildCron(schedule.getSchedule(), Optional.ofNullable(calendar.getFirstDayOfWeek()));
+    public static SchedulerCalculator newSchedulerCalculator(ZonedDateTime startDateTime,
+                                                             Calendar calendar,
+                                                             BusinessSchedule schedule) {
+        List<String> cronList = SchedulerUtil.buildCron(schedule.getSchedule(),
+                Optional.ofNullable(calendar.getFirstDayOfWeek()));
         String cron = SchedulerUtil.getNearestCron(cronList, startDateTime);
         Integer year = getYear(schedule.getSchedule().getYear());
         if (schedule.isSetDelay()) {
@@ -129,7 +132,8 @@ public class SchedulerCalculator {
             } else {
                 nextDateTime = computeNextFireTime(dateTime != null ? dateTime : lastNextCronTime);
             }
-        } while (nextDateTime.getNextFireTime().equals(computeNextFireTime(nextDateTime.getNextCronTime()).getNextFireTime()));
+        } while (nextDateTime.getNextFireTime().equals(
+                computeNextFireTime(nextDateTime.getNextCronTime()).getNextFireTime()));
 
 
         return nextDateTime;
@@ -157,7 +161,8 @@ public class SchedulerCalculator {
 
         // Exclude holiday only if there is a shift (day, month etc.)
         if (isDateShift()) {
-            LocalDateTime excludedTime = nextFireTime.toLocalDate().atStartOfDay().with(dateAdjuster.adjust(0, 0, 0, 0)); // skip holiday
+            // skip holiday
+            var excludedTime = nextFireTime.toLocalDate().atStartOfDay().with(dateAdjuster.adjust(0, 0, 0, 0));
 
             nextFireTime = excludedTime.isAfter(nextFireTime) ? excludedTime : nextFireTime;
             nextFireTime = nextFireTime.plusYears(calculatorConfig.getDelayYears());
@@ -180,19 +185,20 @@ public class SchedulerCalculator {
         ZonedDateTime nextCronTime = ExecutionTime.forCron(cron)
                 .nextExecution(date.atZone(timeZone.toZoneId()))
                 .orElseThrow(() -> {
-                    throw new IllegalStateException(String.format("Can't get nextExecution for cron '%s' with '%s'", cron.asString(), date));
+                    throw new IllegalStateException(
+                            String.format("Can't get nextExecution for cron '%s' with '%s'", cron.asString(), date));
                 });
 
         return nextCronTime.toLocalDateTime();
     }
 
     private boolean isDateShift() {
-        return calculatorConfig.getDelayYears() > 0 ||
-                calculatorConfig.getDelayDays() > 0 ||
-                calculatorConfig.getDelayMonths() > 0 ||
-                calculatorConfig.getDelayMinutes() > 0 ||
-                calculatorConfig.getDelayHours() > 0 ||
-                calculatorConfig.getDelaySeconds() > 0;
+        return calculatorConfig.getDelayYears() > 0
+                || calculatorConfig.getDelayDays() > 0
+                || calculatorConfig.getDelayMonths() > 0
+                || calculatorConfig.getDelayMinutes() > 0
+                || calculatorConfig.getDelayHours() > 0
+                || calculatorConfig.getDelaySeconds() > 0;
     }
 
     @Data

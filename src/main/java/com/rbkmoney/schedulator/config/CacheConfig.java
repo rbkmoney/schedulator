@@ -13,7 +13,8 @@ import java.util.concurrent.TimeUnit;
 public class CacheConfig {
 
     @Bean
-    public Cache<Long, Calendar> calendarCache(@Value("${service.dominant.cache.calendar.expireMinutes:120}") Long expireMinutes) {
+    public Cache<Long, Calendar> calendarCache(
+            @Value("${service.dominant.cache.calendar.expireMinutes:120}") Long expireMinutes) {
         return Caffeine.newBuilder()
                 .expireAfterWrite(expireMinutes, TimeUnit.MINUTES)
                 .build();

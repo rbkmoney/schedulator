@@ -31,7 +31,8 @@ import static com.cronutils.model.field.expression.FieldExpressionFactory.on;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SchedulerUtil {
 
-    public static final CronParser QUARTZ_CRON_PARSER = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ));
+    public static final CronParser QUARTZ_CRON_PARSER =
+            new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ));
 
     public static List<String> buildCron(Schedule schedule, Optional<DayOfWeek> firstDayOfWeek) {
         WeekDay weekDay = firstDayOfWeek
@@ -87,7 +88,9 @@ public class SchedulerUtil {
 
     private static FieldExpression buildDaysOfWeekOnExpression(Set<DayOfWeek> days, WeekDay firstDayOfWeek) {
         Set<Integer> dayValues = days.stream()
-                .map(dayValue -> ConstantsMapper.weekDayMapping(firstDayOfWeek, ConstantsMapper.QUARTZ_WEEK_DAY, dayValue.getValue()))
+                .map(dayValue -> ConstantsMapper.weekDayMapping(firstDayOfWeek,
+                        ConstantsMapper.QUARTZ_WEEK_DAY,
+                        dayValue.getValue()))
                 .collect(Collectors.toSet());
         return buildOnExpression(dayValues);
     }
