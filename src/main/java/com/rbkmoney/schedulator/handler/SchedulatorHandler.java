@@ -30,10 +30,7 @@ public class SchedulatorHandler implements SchedulatorSrv.Iface {
 
         if (registerJobRequest.getSchedule().isSetDominantSchedule()) {
             DominantBasedSchedule dominantSchedule = registerJobRequest.getSchedule().getDominantSchedule();
-            jobRegistered.setSchedule(Schedule.dominant_schedule(new DominantBasedSchedule()
-                    .setBusinessScheduleRef(dominantSchedule.getBusinessScheduleRef())
-                    .setCalendarRef(dominantSchedule.getCalendarRef())
-                    .setRevision(dominantSchedule.getRevision())));
+            jobRegistered.setSchedule(Schedule.dominant_schedule(new DominantBasedSchedule(dominantSchedule)));
         }
 
         ScheduleChange scheduleChange = ScheduleChange.schedule_job_registered(jobRegistered);

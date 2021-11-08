@@ -1,5 +1,6 @@
 package com.rbkmoney.schedulator.serializer;
 
+import com.rbkmoney.damsel.schedule.DominantBasedSchedule;
 import com.rbkmoney.damsel.schedule.ScheduleJobRegistered;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,10 +20,10 @@ public class SchedulatorMachineState {
         registerState.setContext(new RegisterContext(scheduleJobRegistered.getContext()));
         registerState.setExecutorServicePath(scheduleJobRegistered.getExecutorServicePath());
         registerState.setSchedulerId(scheduleJobRegistered.getScheduleId());
-        registerState.setDominantRevisionId(scheduleJobRegistered.getSchedule().getDominantSchedule().getRevision());
-        registerState.setBusinessSchedulerId(
-                scheduleJobRegistered.getSchedule().getDominantSchedule().getBusinessScheduleRef().getId());
-        registerState.setCalendarId(scheduleJobRegistered.getSchedule().getDominantSchedule().getCalendarRef().getId());
+        DominantBasedSchedule dominantSchedule = scheduleJobRegistered.getSchedule().getDominantSchedule();
+        registerState.setDominantRevisionId(dominantSchedule.isSetRevision() ? dominantSchedule.getRevision() : null);
+        registerState.setBusinessSchedulerId(dominantSchedule.getBusinessScheduleRef().getId());
+        registerState.setCalendarId(dominantSchedule.getCalendarRef().getId());
         this.registerState = registerState;
     }
 

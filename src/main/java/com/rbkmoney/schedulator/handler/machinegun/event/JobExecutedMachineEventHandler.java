@@ -84,8 +84,10 @@ public class JobExecutedMachineEventHandler implements MachineEventHandler {
     private ScheduleJobRegistered mapToScheduleJobRegistered(MachineRegisterState registerState) {
         DominantBasedSchedule dominantBasedSchedule = new DominantBasedSchedule()
                 .setBusinessScheduleRef(new BusinessScheduleRef(registerState.getBusinessSchedulerId()))
-                .setCalendarRef(new CalendarRef(registerState.getCalendarId()))
-                .setRevision(registerState.getDominantRevisionId());
+                .setCalendarRef(new CalendarRef(registerState.getCalendarId()));
+        if (registerState.getDominantRevisionId() != null) {
+            dominantBasedSchedule.setRevision(registerState.getDominantRevisionId());
+        }
         Schedule schedule = Schedule.dominant_schedule(dominantBasedSchedule);
         return new ScheduleJobRegistered()
                 .setContext(registerState.getContext().getBytes())
