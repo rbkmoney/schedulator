@@ -28,7 +28,7 @@ public class CacheDominantService implements DominantService {
 
     @Override
     public Calendar getCalendar(CalendarRef calendarRef, Long domainRevision) throws NotFoundException {
-        long key = calendarRef.getId() + domainRevision;
+        long key = calendarRef.getId() + (domainRevision != null ? domainRevision : 0);
         return dominantCache.get(key, s -> dominantService.getCalendar(calendarRef, domainRevision));
     }
 }
